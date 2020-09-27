@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from argparse import Namespace
 import System
+import json
 import os
 import unittest
 
@@ -13,7 +14,7 @@ class TestCVS(unittest.TestCase):
                                 ignore_most=False)).run()
 
     def test_init(self):
-        os.remove('.repos/history.rcs')
+        os.remove('.repos/history.json')
         os.rmdir('.repos/diffs')
         os.rmdir('.repos/revisions')
         os.rmdir('.repos')
@@ -23,9 +24,10 @@ class TestCVS(unittest.TestCase):
                                 ignore_most=False)).run()
         self.assertTrue(os.path.exists('.repos/diffs'))
         self.assertTrue(os.path.exists('.repos/revisions'))
-        self.assertTrue(os.path.exists('.repos/history.rcs'))
-        with open('.repos/history.rcs'.format(os.getcwd())) as history:
-            self.assertIn('Repository created.', history.readline())
+        self.assertTrue(os.path.exists('.repos/history.json'))
+        with open('.repos/history.json') as history:
+            data = json.load(history)
+            self.assertEqual(data['Contents: '][0]['Message: '], 'Repository created.')
 
     def test_add(self):
         System.System(Namespace(command=System.Add, directory=os.getcwd(),
@@ -37,11 +39,12 @@ class TestCVS(unittest.TestCase):
         with open('.repos/add_list.cvs') as add_list:
             self.assertEqual('{0}/README.md->self'.format(os.getcwd()),
                              add_list.readline()[:-1])
-        with open('.repos/history.rcs') as history:
-            test_cvs_line = history.readlines()[1]
-            self.assertIn('{0}/README.md was added. '
-                          'Message: Hello, Python!'.format(os.getcwd()),
-                          test_cvs_line)
+        with open('.repos/history.json') as history:
+            data = json.load(history)
+            self.assertEqual(data['Contents: '][1]['Message: '],
+                             '{0}/README.md was added.'.format(os.getcwd()))
+            self.assertEqual(data['Contents: '][1]['Note: '],
+                             'Hello, Python!')
 
     def test_commit(self):
         System.System(Namespace(command=System.Add, directory=os.getcwd(),
@@ -59,10 +62,13 @@ class TestCVS(unittest.TestCase):
         self.assertTrue(os.path.exists
                         ('.repos/revisions/1.0{0}/README.md'
                          .format(os.getcwd())))
-        with open('.repos/history.rcs') as history:
-            self.assertIn('{0}/README.md was committed to revision 1.0.'
-                          ' Message: Hello, Python!'
-                          .format(os.getcwd()), history.readlines()[-1])
+        with open('.repos/history.json') as history:
+            data = json.load(history)
+            self.assertEqual(data['Contents: '][1]['Message: '],
+                             '{0}/README.md was committed to revision 1.0.'
+                             .format(os.getcwd()))
+            self.assertEqual(data['Contents: '][1]['Note: '],
+                             'Hello, Python!')
 
 
 if __name__ == '__main__':

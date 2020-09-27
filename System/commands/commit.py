@@ -1,5 +1,6 @@
 from System import Command
 from datetime import datetime
+import json
 import os
 import shutil
 
@@ -84,10 +85,17 @@ class Commit(Command):
                 file_in_revision.write(''.join(file_lines))
         if not system.arguments.no_disk_changes and \
                 not system.arguments.no_logging:
+            message = {
+                'Command: ': 'Commit',
+                'Date, time: ': str(datetime.now()),
+                'Message: ': '{0} was committed to revision {1}.'
+                             .format(file, revision),
+                'Note: ': system.arguments.message
+            }
+            with open(system.history, 'r') as history:
+                data = json.load(history)
+            data['Contents: '].append(message)
             with open(system.history, 'a+') as history:
-                history.write('{0} {1} was committed to revision {2}. '
-                              'Message: {3}\n'
-                              .format(datetime.now(), file, revision,
-                                      system.arguments.message))
+                json.dump(data, history, indent=4)
         if not system.arguments.ignore_all:
             print('{0} was committed to revision {1}'.format(file, revision))

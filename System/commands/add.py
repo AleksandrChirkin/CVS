@@ -1,6 +1,7 @@
 from System import Command
 from datetime import datetime
 import difflib
+import json
 import os
 import random
 
@@ -57,10 +58,17 @@ class Add(Command):
                       'a+') as add_list:
                 add_list.write('{0}->self\n'.format(file))
             if not system.arguments.no_logging:
-                with open(system.history, 'a+') as history:
-                    history.write('{0} {1} was added. Message: {2}\n'
-                                  .format(datetime.now(), file,
-                                          system.arguments.message))
+                message = {
+                    'Command: ': 'Add',
+                    'Date, time: ': str(datetime.now()),
+                    'Message: ': '{0} was added.'.format(file),
+                    'Note: ': system.arguments.message
+                }
+                with open(system.history, 'r') as history:
+                    data = json.load(history)
+                data['Contents: '].append(message)
+                with open(system.history, 'w') as history:
+                    json.dump(data, history, indent=4)
         if not system.arguments.ignore_all:
             print('{0} was added'.format(file))
 
@@ -81,10 +89,15 @@ class Add(Command):
                       .format(system.repository), 'a+') as add_list:
                 add_list.write('{0}->{1}\n'.format(file, diff_number))
             if not system.arguments.no_logging:
+                message = {
+                    'Command: ': 'Add',
+                    'Date, time: ': str(datetime.now()),
+                    'Message: ': '{0} was added to diff {1}.'
+                                 .format(file, diff_number),
+                    'Note: ': system.arguments.message
+                }
                 with open(system.history, 'a+') as history:
-                    history.write('{0} {1} was added to diff {2}. '
-                                  'Message: {3}\n'
-                                  .format(datetime.now(), file, diff_number,
-                                          system.arguments.message))
+                    json.dump(message, history, indent=4)
+                    history.write('\n')
         if not system.arguments.ignore_all:
             print('{0} was added to diff {1}'.format(file, diff_number))

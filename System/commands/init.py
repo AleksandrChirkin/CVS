@@ -1,5 +1,6 @@
 from System import Command
 from datetime import datetime
+import json
 import os
 
 
@@ -50,9 +51,18 @@ class Init(Command):
                         not system.arguments.ignore_most:
                     print('Repository created')
             if not system.arguments.no_logging:
+                history_head = {
+                    'Title: ': 'History of repository',
+                    'Contents: ': []
+                }
+                message = {
+                    'Command: ': 'Init',
+                    'Date, time: ': str(datetime.now()),
+                    'Message: ': 'Repository created.'
+                }
+                history_head['Contents: '].append(message)
                 with open(system.history, 'w') as history:
-                    history.write("{0} Repository created.\n"
-                                  .format(datetime.now()))
+                    json.dump(history_head, history, indent=4)
             if not system.arguments.ignore_all and \
                     not system.arguments.ignore_most:
                 print('History file created')

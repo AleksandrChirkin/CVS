@@ -7,7 +7,7 @@ class System:
         self.arguments = arguments
         self.directory = arguments.directory
         self.repository = '{0}/.repos'.format(self.directory)
-        self.history = '{0}/history.rcs'.format(self.repository)
+        self.history = '{0}/history.json'.format(self.repository)
         self.diffs = '{0}/diffs'.format(self.repository)
         self.revisions = '{0}/revisions'.format(self.repository)
 
