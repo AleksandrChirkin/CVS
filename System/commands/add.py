@@ -96,8 +96,10 @@ class Add(Command):
                                  .format(file, diff_number),
                     'Note: ': system.arguments.message
                 }
-                with open(system.history, 'a+') as history:
-                    json.dump(message, history, indent=4)
-                    history.write('\n')
+                with open(system.history, 'r') as history:
+                    data = json.load(history)
+                data['Contents: '].append(message)
+                with open(system.history, 'w') as history:
+                    json.dump(data, history, indent=4)
         if not system.arguments.ignore_all:
             print('{0} was added to diff {1}'.format(file, diff_number))

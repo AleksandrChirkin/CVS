@@ -95,7 +95,7 @@ class Commit(Command):
             with open(system.history, 'r') as history:
                 data = json.load(history)
             data['Contents: '].append(message)
-            with open(system.history, 'a+') as history:
+            with open(system.history, 'w') as history:
                 json.dump(data, history, indent=4)
         if not system.arguments.ignore_all:
             print('{0} was committed to revision {1}'.format(file, revision))

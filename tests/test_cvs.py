@@ -64,10 +64,10 @@ class TestCVS(unittest.TestCase):
                          .format(os.getcwd())))
         with open('.repos/history.json') as history:
             data = json.load(history)
-            self.assertEqual(data['Contents: '][1]['Message: '],
+            self.assertEqual(data['Contents: '][2]['Message: '],
                              '{0}/README.md was committed to revision 1.0.'
                              .format(os.getcwd()))
-            self.assertEqual(data['Contents: '][1]['Note: '],
+            self.assertEqual(data['Contents: '][2]['Note: '],
                              'Hello, Python!')
 
 
