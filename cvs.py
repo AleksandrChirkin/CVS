@@ -41,7 +41,8 @@ def parse_args():
         elif command is Log:
             _parser.add_argument('-dates', help='Time interval')
             _parser.add_argument('-files',  nargs='+', help='Files names')
-            _parser.add_argument('-rev', '--revisions', help='Revisions number')
+            _parser.add_argument('-rev', '--revisions',
+                                 help='Revisions number')
     return parser.parse_args()
 
 

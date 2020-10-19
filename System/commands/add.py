@@ -78,7 +78,8 @@ class Add(Command):
             differ = difflib.ndiff(f.readlines(), rev.readlines())
         diff_number = random.randint(0, 10 ** 32)
         if not system.arguments.no_disk_changes:
-            with open('{0}/{1}'.format(system.diffs, diff_number), 'w') as diff:
+            with open('{0}/{1}'.format(system.diffs, 
+                                       diff_number), 'w') as diff:
                 for item in differ:
                     diff.write(item)
         if not system.arguments.ignore_all and \

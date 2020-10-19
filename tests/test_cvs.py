@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 from argparse import Namespace
-import System
 import json
 import os
+import sys
 import unittest
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             os.path.pardir))
+import System
 
 
 class TestCVS(unittest.TestCase):
@@ -27,7 +31,8 @@ class TestCVS(unittest.TestCase):
         self.assertTrue(os.path.exists('.repos/history.json'))
         with open('.repos/history.json') as history:
             data = json.load(history)
-            self.assertEqual(data['Contents: '][0]['Message: '], 'Repository created.')
+            self.assertEqual(data['Contents: '][0]['Message: '],
+                             'Repository created.')
 
     def test_add(self):
         System.System(Namespace(command=System.Add, directory=os.getcwd(),

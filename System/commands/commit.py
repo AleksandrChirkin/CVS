@@ -67,7 +67,8 @@ class Commit(Command):
                                 '{0}/{1}{2}'.format(system.revisions,
                                                     revision, file))
         else:
-            with open(file) as f, open('{0}/{1}'.format(system.diffs, diff)) as diff:
+            with open(file) as f, open('{0}/{1}'.format(system.diffs, 
+                                                        diff)) as diff:
                 file_lines = f.readlines()
                 diff_lines = diff.readlines()
             files_margin = 0
