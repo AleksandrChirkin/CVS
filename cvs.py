@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
+from pathlib import Path
 from System import Init, Add, Commit, Reset, Log, System, COMMANDS
 import os
 
 
 def parse_args():
     parser = ArgumentParser(description='Concurrent Versions System')
-    parser.add_argument('-d', '--directory', default=os.getcwd(),
+    parser.add_argument('-d', '--directory', default=Path(os.getcwd()),
                         help='Searches repository in other directory')
     parser.add_argument('-l', '--no_logging', action='store_true',
                         help='Executes command without logging it')

@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from pathlib import Path
 import os
 
 
@@ -6,21 +6,39 @@ class System:
     def __init__(self, arguments):
         self.arguments = arguments
         self.directory = arguments.directory
-        self.repository = '{0}/.repos'.format(self.directory)
-        self.history = '{0}/history.json'.format(self.repository)
-        self.diffs = '{0}/diffs'.format(self.repository)
-        self.revisions = '{0}/revisions'.format(self.repository)
+        self.repository = Path('{}/.repos'.format(self.directory))
+        self.history = Path('{}/history.json'.format(self.repository))
+        self.diffs = Path('{}/diffs'.format(self.repository))
+        self.revisions = Path('{}/revisions'.format(self.repository))
+        self.cvsignore = Path('{}/.cvsignore'.format(self.directory))
 
     def run(self):
         try:
             self.arguments.command().run(self)
-        except AttributeError:
-            print("ERROR: Improper attributes!")
+        except AttributeError as err:
+            print("ERROR: Improper attributes:{}".format(err))
+
+    def find_all_revisions(self):
+        try:
+            revisions = next(os.walk(self.revisions))[1]
+        except StopIteration:
+            return list()
+        else:
+            all_revisions = []
+            for revision in revisions:
+                all_revisions.append(revision)
+            return all_revisions
+
+    def is_in_cvsignore(self, file) -> bool:
+        with open(self.cvsignore) as cvsignore:
+            ignored = cvsignore.readlines()
+        for item in ignored:
+            if item[:-1] in file:
+                return True
+        return False
 
     @staticmethod
-    def find_all_revisions(system):
-        revisions = next(os.walk(system.revisions))
-        all_revisions = []
-        for revision in revisions[1]:
-            all_revisions.append(revision)
-        return all_revisions
+    def get_slash() -> str:
+        if os.name == 'nt':
+            return '\\'
+        return '/'

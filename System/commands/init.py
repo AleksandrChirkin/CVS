@@ -1,7 +1,9 @@
 from System import Command
 from datetime import datetime
+from pathlib import Path
 import json
 import os
+import shutil
 
 
 class Init(Command):
@@ -23,16 +25,23 @@ class Init(Command):
             for element in content:
                 for item in element[2]:
                     if not system.arguments.no_disk_changes:
-                        os.remove("{0}/{1}".format(element[0], item))
+                        os.remove(Path("{0}/{1}".format(element[0], item)))
                     if not system.arguments.ignore_all and\
                             not system.arguments.ignore_most:
-                        print("{0}/{1} removed".format(element[0], item))
+                        print(Path("{0}/{1} removed"
+                                   .format(element[0], item)))
                 for folder in element[1]:
                     if not system.arguments.no_disk_changes:
-                        os.rmdir("{0}/{1}".format(element[0], folder))
+                        os.rmdir(Path("{0}/{1}".format(element[0], folder)))
                     if not system.arguments.ignore_all and \
                             not system.arguments.ignore_most:
-                        print("{0}/{1} removed".format(element[0], folder))
+                        print(Path("{0}/{1} removed"
+                                   .format(element[0], folder)))
+            if not system.arguments.no_disk_changes:
+                os.remove(system.cvsignore)
+            if not system.arguments.ignore_all and \
+                    not system.arguments.ignore_most:
+                print(".cvsignore file {0} removed".format(system.directory))
             if not system.arguments.no_disk_changes:
                 os.rmdir(system.repository)
             if not system.arguments.ignore_all and \
@@ -42,8 +51,7 @@ class Init(Command):
         except OSError as err:
             print("ERROR: {0}".format(err))
 
-    @staticmethod
-    def create_repository(system):
+    def create_repository(self, system):
         try:
             if not system.arguments.no_disk_changes:
                 os.mkdir(system.repository)
@@ -76,6 +84,18 @@ class Init(Command):
             if not system.arguments.ignore_all and \
                     not system.arguments.ignore_most:
                 print('Diffs folder created')
+            self.make_cvsignore(system)
         except OSError:
             print("ERROR: Repository has already been created!\n"
                   "To reset repository, use 'init -r' command")
+
+    @staticmethod
+    def make_cvsignore(system):
+        if not system.arguments.no_disk_changes:
+            shutil.copyfile(Path('{}/.gitignore'.format(system.directory)),
+                            system.cvsignore)
+            with open(system.cvsignore, 'a') as cvsignore:
+                cvsignore.write('\n.git')
+        if not system.arguments.ignore_all and \
+                not system.arguments.ignore_most:
+            print('.cvsignore file added')
