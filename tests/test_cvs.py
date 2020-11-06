@@ -116,7 +116,8 @@ class TestCVS(unittest.TestCase):
 
     def test_incorrect_log(self):
         self.make_commit('1.0')
-        System(Namespace(command=Log, dates='{}>=notadate'.format(date.today()),
+        System(Namespace(command=Log,
+                         dates='{}>=notadate'.format(date.today()),
                          directory=os.getcwd(), files=['README.md'],
                          no_logging=False, no_disk_changes=False,
                          revisions=['1.0'], ignore_all=False,

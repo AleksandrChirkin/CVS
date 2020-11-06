@@ -39,7 +39,8 @@ class Reset(Command):
             if not system.arguments.no_disk_changes:
                 shutil.copyfile(file_version, file)
             message = '{} was reset from revision {}.'.format(file, revision)
-            if not system.arguments.no_disk_changes and not system.arguments.no_logging:
+            if not system.arguments.no_disk_changes and\
+                    not system.arguments.no_logging:
                 self.update_log(system, message)
             if not system.arguments.ignore_all:
                 print(message)

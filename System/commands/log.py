@@ -37,7 +37,8 @@ class Log(Command):
 
     def is_date_in_interval(self, date_str, interval) -> bool:
         try:
-            if '<' not in interval and '=' not in interval and '>' not in interval:
+            if '<' not in interval and '=' not in interval and\
+                    '>' not in interval:
                 return date_str in interval.split(';')
             date_item = datetime.strptime(date_str, "%Y-%m-%d").date()
             if '<=' in interval:

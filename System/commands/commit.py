@@ -72,7 +72,8 @@ class Commit(Command):
                 shutil.copyfile(file,
                                 Path('{}/{}/{}'.format(system.revisions,
                                                        revision,
-                                                       slash.join(levels[1:]))))
+                                                       slash
+                                                       .join(levels[1:]))))
         else:
             with open(file) as f, open(Path('{}/{}'.format(system.diffs,
                                                            diff))) as diff:
