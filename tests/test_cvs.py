@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from argparse import Namespace
+from datetime import date
 import json
 import os
 import sys
@@ -7,17 +8,17 @@ import unittest
 import time
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
-import System
+from System import Init, Add, Commit, Reset, Log, System
 
 
 class TestCVS(unittest.TestCase):
     def setUp(self):
-        self.slash = System.System.get_slash()
+        self.slash = System.get_slash()
         self.levels = os.getcwd().split(self.slash)
-        System.System(Namespace(command=System.Init, directory=os.getcwd(),
-                                no_logging=False, no_disk_changes=False,
-                                recreate=True, ignore_all=False,
-                                ignore_most=False)).run()
+        System(Namespace(command=Init, directory=os.getcwd(),
+                         no_logging=False, no_disk_changes=False,
+                         recreate=True, ignore_all=False,
+                         ignore_most=False)).run()
 
     def test_init(self):
         os.remove('.repos/history.json')
@@ -25,10 +26,10 @@ class TestCVS(unittest.TestCase):
         os.rmdir('.repos/revisions')
         os.rmdir('.repos')
         os.remove('.cvsignore')
-        System.System(Namespace(command=System.Init, directory=os.getcwd(),
-                                no_logging=False, no_disk_changes=False,
-                                recreate=False, ignore_all=False,
-                                ignore_most=False)).run()
+        System(Namespace(command=Init, directory=os.getcwd(),
+                         no_logging=False, no_disk_changes=False,
+                         recreate=False, ignore_all=False,
+                         ignore_most=False)).run()
         self.assertTrue(os.path.exists('.cvsignore'))
         self.assertTrue(os.path.exists('.repos/diffs'))
         self.assertTrue(os.path.exists('.repos/revisions'))
@@ -39,14 +40,14 @@ class TestCVS(unittest.TestCase):
                              'Repository created.')
 
     def test_add(self):
-        System.System(Namespace(command=System.Add, directory=os.getcwd(),
-                                files=['README.md'], no_logging=False,
-                                message='Hello, Python!',
-                                no_disk_changes=False, ignore_all=False,
-                                ignore_most=False)).run()
+        System(Namespace(command=Add, directory=os.getcwd(),
+                         files=['README.md'], no_logging=False,
+                         message='Hello, Python!',
+                         no_disk_changes=False, ignore_all=False,
+                         ignore_most=False)).run()
         self.assertTrue(os.path.exists('.repos/add_list.cvs'))
         with open('.repos/add_list.cvs') as add_list:
-            self.assertEqual('{0}/README.md->self'.format(os.getcwd()),
+            self.assertEqual('{}/README.md->self'.format(os.getcwd()),
                              add_list.readline()[:-1])
         with open('.repos/history.json') as history:
             data = json.load(history)
@@ -55,8 +56,8 @@ class TestCVS(unittest.TestCase):
             self.assertEqual(data['Contents: '][1]['Note: '],
                              'Hello, Python!')
 
-    def test_commit(self):
-        self.make_commit()
+    def test_first_commit(self):
+        self.make_commit('1.0')
         self.assertFalse(os.path.exists('repos/add_list.cvs'))
         self.assertTrue(os.path.exists
                         ('.repos/revisions/1.0/{}/README.md'
@@ -64,18 +65,26 @@ class TestCVS(unittest.TestCase):
         with open('.repos/history.json') as history:
             data = json.load(history)
             self.assertEqual(data['Contents: '][2]['Message: '],
-                             '{0}/README.md was committed to revision 1.0.'
+                             '{}/README.md was committed to revision 1.0.'
                              .format(os.getcwd()))
             self.assertEqual(data['Contents: '][2]['Note: '],
                              'Hello, Python!')
 
+    def test_non_first_commit(self):
+        self.make_commit('1.0')
+        with open('README.md', 'a') as readme:
+            readme.write(' ')
+        self.make_commit('1.1')
+        revisions = next(os.walk('.repos/revisions'))
+        self.assertEqual(len(revisions[1]), 2)
+
     def test_reset(self):
-        self.make_commit()
+        self.make_commit('1.0')
         start_time = int(time.time())
-        System.System(Namespace(command=System.Reset, directory=os.getcwd(),
-                                files=['README.md'], no_logging=False,
-                                no_disk_changes=False, revision='1.0',
-                                ignore_all=False, ignore_most=False)).run()
+        System(Namespace(command=Reset, directory=os.getcwd(),
+                         files=['README.md'], no_logging=False,
+                         no_disk_changes=False, revision=None,
+                         ignore_all=False, ignore_most=False)).run()
         with open('README.md') as file,\
                 open('.repos/revisions/1.0/{}/README.md'
                      .format(self.slash.join(self.levels[1:]))) as version:
@@ -84,22 +93,53 @@ class TestCVS(unittest.TestCase):
         with open('.repos/history.json') as history:
             data = json.load(history)
             self.assertEqual(data['Contents: '][3]['Message: '],
-                             '{0}/README.md was reset from revision 1.0.'
+                             '{}/README.md was reset from revision 1.0.'
                              .format(os.getcwd()))
 
+    def test_correct_log(self):
+        self.make_commit('1.0')
+        System(Namespace(command=Log, dates='<={}'.format(date.today()),
+                         directory=os.getcwd(), files=['README.md'],
+                         no_logging=False, no_disk_changes=False,
+                         revisions=['1.0'], ignore_all=False,
+                         ignore_most=False)).run()
+        System(Namespace(command=Log, dates=str(date.today()),
+                         directory=os.getcwd(), files=['README.md'],
+                         no_logging=False, no_disk_changes=False,
+                         revisions=['1.0'], ignore_all=False,
+                         ignore_most=False)).run()
+        t, v, tb = sys.exc_info()
+        self.assertIsNone(t)
+
+    def test_incorrect_log(self):
+        self.make_commit('1.0')
+        System(Namespace(command=Log, dates='{}>=notadate'.format(date.today()),
+                         directory=os.getcwd(), files=['README.md'],
+                         no_logging=False, no_disk_changes=False,
+                         revisions=['1.0'], ignore_all=False,
+                         ignore_most=False)).run()
+        self.assertRaises(ValueError)
+
     @staticmethod
-    def make_commit():
-        System.System(Namespace(command=System.Add, directory=os.getcwd(),
-                                files=['README.md'], no_logging=False,
-                                message='Hello, Python!',
-                                no_disk_changes=False, ignore_all=False,
-                                ignore_most=False)).run()
-        System.System(Namespace(command=System.Commit, directory=os.getcwd(),
-                                no_logging=False,
-                                message='Hello, Python!',
-                                no_disk_changes=False,
-                                revision='1.0', ignore_all=False,
-                                ignore_most=False)).run()
+    def make_commit(revision):
+        System(Namespace(command=Add, directory=os.getcwd(),
+                         files=['README.md'], no_logging=False,
+                         message='Hello, Python!',
+                         no_disk_changes=False, ignore_all=False,
+                         ignore_most=False)).run()
+        System(Namespace(command=Commit, directory=os.getcwd(),
+                         no_logging=False, message='Hello, Python!',
+                         no_disk_changes=False,
+                         revision=revision, ignore_all=False,
+                         ignore_most=False)).run()
+
+    def tearDown(self):
+        with open('README.md', 'r+') as readme:
+            lines = readme.readlines()
+            if lines[-1] == ' ':
+                end = readme.seek(0, 2)
+                readme.seek(0, 1)
+                readme.truncate(end-1)
 
 
 if __name__ == '__main__':
