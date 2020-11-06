@@ -8,7 +8,7 @@ import unittest
 import time
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
-from System import Init, Add, Commit, Reset, Log, System
+from cvsdomain import Init, Add, Commit, Reset, Log, System  # noqa
 
 
 class TestCVS(unittest.TestCase):
