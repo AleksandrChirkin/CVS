@@ -15,17 +15,20 @@ class TestCVS(unittest.TestCase):
     def setUp(self):
         self.slash = System.get_slash()
         self.levels = os.getcwd().split(self.slash)
-        System(Namespace(command=Init, directory=os.getcwd(),
-                         no_logging=False, no_disk_changes=False,
-                         recreate=True, ignore_all=False,
-                         ignore_most=False)).run()
+        if os.path.exists('.repos'):
+            System(Namespace(command=Init, directory=os.getcwd(),
+                             no_logging=False, no_disk_changes=False,
+                             recreate=True, ignore_all=False,
+                             ignore_most=False)).run()
 
     def test_init(self):
-        os.remove('.repos/history.json')
-        os.rmdir('.repos/diffs')
-        os.rmdir('.repos/revisions')
-        os.rmdir('.repos')
-        os.remove('.cvsignore')
+        if os.path.exists('.repos'):
+            os.remove('.repos/history.json')
+            os.rmdir('.repos/diffs')
+            os.rmdir('.repos/revisions')
+            os.rmdir('.repos')
+        if os.path.exists('.cvsignore'):
+            os.remove('.cvsignore')
         System(Namespace(command=Init, directory=os.getcwd(),
                          no_logging=False, no_disk_changes=False,
                          recreate=False, ignore_all=False,
