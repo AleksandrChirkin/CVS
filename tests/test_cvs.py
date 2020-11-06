@@ -20,6 +20,11 @@ class TestCVS(unittest.TestCase):
                              no_logging=False, no_disk_changes=False,
                              recreate=True, ignore_all=False,
                              ignore_most=False)).run()
+        else:
+            System(Namespace(command=Init, directory=os.getcwd(),
+                             no_logging=False, no_disk_changes=False,
+                             recreate=False, ignore_all=False,
+                             ignore_most=False)).run()
 
     def test_init(self):
         if os.path.exists('.repos'):
