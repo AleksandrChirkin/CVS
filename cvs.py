@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from argparse import ArgumentParser
 from pathlib import Path
 from cvsdomain import Init, Add, Commit, Reset, Log, System, COMMANDS

@@ -1,4 +1,4 @@
-from cvsdomain import Command
+from cvsdomain import Command, System
 from datetime import datetime
 from pathlib import Path
 import json
@@ -10,7 +10,7 @@ class Commit(Command):
     """
     Commits files to repository.
     """
-    def run(self, system):
+    def run(self, system: System) -> None:
         if system.arguments.revision is None:
             revision = datetime.now().strftime('%Y%m%d%H%M%S%f')
         else:
@@ -24,7 +24,7 @@ class Commit(Command):
                 files = commit_list.readlines()
             self.create_revision(system, revision)
             for file in files:
-                self.commit(system, file[:file.index('->')],
+                self.commit(system, Path(file[:file.index('->')]),
                             file[file.index('->')+2:-1], revision)
         except OSError as err:
             print("OS ERROR:{}".format(err))
@@ -32,7 +32,7 @@ class Commit(Command):
             os.remove(Path('{}/add_list.cvs'.format(system.repository)))
 
     @staticmethod
-    def create_revision(system, revision):
+    def create_revision(system: System, revision: str) -> None:
         revision_folder = Path('{}/{}'.format(system.revisions, revision))
         if not system.arguments.no_disk_changes:
             os.mkdir(revision_folder)
@@ -64,7 +64,7 @@ class Commit(Command):
                         print('{} directory created'.format(new_directory))
 
     @staticmethod
-    def commit(system, file, diff, revision):
+    def commit(system: System, file: Path, diff: str, revision: str) -> None:
         if diff == 'self':
             if not system.arguments.no_disk_changes:
                 slash = system.get_slash()

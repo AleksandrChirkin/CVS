@@ -1,4 +1,4 @@
-from cvsdomain import Command
+from cvsdomain import Command, System
 from datetime import datetime
 from pathlib import Path
 import difflib
@@ -11,7 +11,7 @@ class Add(Command):
     """
     Adds a new file to commit list.
     """
-    def run(self, system):
+    def run(self, system: System) -> None:
         try:
             for file in system.arguments.files:
                 if not os.path.exists(file) and\
@@ -31,7 +31,7 @@ class Add(Command):
         except OSError as err:
             print("OS error: {}".format(err))
 
-    def add(self, system, file):
+    def add(self, system: System, file: Path) -> None:
         if system.is_in_cvsignore(str(file)):
             if not system.arguments.ignore_all:
                 print('{} was ignored because it is in .cvsignore'
@@ -54,7 +54,8 @@ class Add(Command):
                     self.add_if_previous_revisions_exist(system, file,
                                                          latest_revision)
 
-    def add_if_no_previous_revisions(self, system, file):
+    def add_if_no_previous_revisions(self, system: System,
+                                     file: Path) -> None:
         message = '{} was added.'.format(file)
         if not system.arguments.no_disk_changes:
             with open(Path('{}/add_list.cvs'.format(system.repository)),
@@ -65,7 +66,8 @@ class Add(Command):
         if not system.arguments.ignore_all:
             print(message)
 
-    def add_if_previous_revisions_exist(self, system, file, latest_revision):
+    def add_if_previous_revisions_exist(self, system: System, file: Path,
+                                        latest_revision: Path) -> None:
         with open(file) as f, open(latest_revision) as rev:
             differ = difflib.ndiff(f.readlines(), rev.readlines())
         diff_number = random.randint(0, 10 ** 32)
@@ -88,7 +90,7 @@ class Add(Command):
             print(message)
 
     @staticmethod
-    def update_log(system, message):
+    def update_log(system: System, message: str) -> None:
         json_message = {
             'Command: ': 'Add',
             'Date, time: ': str(datetime.now()),

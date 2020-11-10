@@ -1,9 +1,11 @@
+from argparse import Namespace
 from pathlib import Path
+from typing import List
 import os
 
 
 class System:
-    def __init__(self, arguments):
+    def __init__(self, arguments: Namespace):
         self.arguments = arguments
         self.directory = arguments.directory
         self.repository = Path('{}/.repos'.format(self.directory))
@@ -12,13 +14,13 @@ class System:
         self.revisions = Path('{}/revisions'.format(self.repository))
         self.cvsignore = Path('{}/.cvsignore'.format(self.directory))
 
-    def run(self):
+    def run(self) -> None:
         try:
             self.arguments.command().run(self)
         except AttributeError as err:
             print("ERROR: Improper attributes:{}".format(err))
 
-    def find_all_revisions(self):
+    def find_all_revisions(self) -> List[str]:
         try:
             revisions = next(os.walk(self.revisions))[1]
         except StopIteration:
@@ -29,7 +31,7 @@ class System:
                 all_revisions.append(revision)
             return all_revisions
 
-    def is_in_cvsignore(self, file) -> bool:
+    def is_in_cvsignore(self, file: str) -> bool:
         with open(self.cvsignore) as cvsignore:
             ignored = cvsignore.readlines()
         for item in ignored:

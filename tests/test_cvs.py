@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from argparse import Namespace
 from datetime import date
 import json
@@ -116,8 +115,8 @@ class TestCVS(unittest.TestCase):
                          no_logging=False, no_disk_changes=False,
                          revisions=['1.0'], ignore_all=False,
                          ignore_most=False)).run()
-        t, v, tb = sys.exc_info()
-        self.assertIsNone(t)
+        exc_type, value, traceback = sys.exc_info()
+        self.assertIsNone(exc_type)
 
     def test_incorrect_log(self):
         self.make_commit('1.0')
@@ -130,7 +129,7 @@ class TestCVS(unittest.TestCase):
         self.assertRaises(ValueError)
 
     @staticmethod
-    def make_commit(revision):
+    def make_commit(revision: str):
         System(Namespace(command=Add, directory=os.getcwd(),
                          files=['README.md'], no_logging=False,
                          message='Hello, Python!',

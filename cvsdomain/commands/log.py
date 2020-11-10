@@ -1,5 +1,6 @@
-from cvsdomain import Command
-from datetime import datetime
+from cvsdomain import Command, System
+from datetime import date, datetime
+from typing import Tuple
 import json
 
 
@@ -7,7 +8,7 @@ class Log(Command):
     """
     Prints info about file and catalog history.
     """
-    def run(self, system):
+    def run(self, system: System) -> None:
         with open(system.history) as history:
             log = json.load(history)
         for item in log["Contents: "]:
@@ -35,7 +36,7 @@ class Log(Command):
                     continue
             print(' '.join(item.values()))
 
-    def is_date_in_interval(self, date_str, interval) -> bool:
+    def is_date_in_interval(self, date_str: str, interval: str) -> bool:
         try:
             if '<' not in interval and '=' not in interval and\
                     '>' not in interval:
@@ -57,7 +58,7 @@ class Log(Command):
             print('ERROR: Incorrect date or date range format')
 
     @staticmethod
-    def date_span(interval, separator):
+    def date_span(interval: str, separator: str) -> Tuple[date, date]:
         fragments = interval.split(separator)
         if len(fragments) > 2:
             raise ValueError

@@ -1,4 +1,4 @@
-from cvsdomain import Command
+from cvsdomain import Command, System
 from datetime import datetime
 from pathlib import Path
 import json
@@ -10,13 +10,13 @@ class Init(Command):
     """
     Creates a repository (if it does not exist) or recreates it
     """
-    def run(self, system):
+    def run(self, system: System) -> None:
         if system.arguments.recreate:
             self.reset_repository(system)
         else:
             self.create_repository(system)
 
-    def reset_repository(self, system):
+    def reset_repository(self, system: System) -> None:
         try:
             if not os.path.exists(system.repository):
                 raise OSError("Repository does not exist! "
@@ -51,7 +51,7 @@ class Init(Command):
         except OSError as err:
             print("ERROR: {0}".format(err))
 
-    def create_repository(self, system):
+    def create_repository(self, system: System) -> None:
         try:
             if not system.arguments.no_disk_changes:
                 os.mkdir(system.repository)
@@ -90,7 +90,7 @@ class Init(Command):
                   "To reset repository, use 'init -r' command")
 
     @staticmethod
-    def make_cvsignore(system):
+    def make_cvsignore(system: System) -> None:
         if not system.arguments.no_disk_changes:
             shutil.copyfile(Path('{}/.gitignore'.format(system.directory)),
                             system.cvsignore)
