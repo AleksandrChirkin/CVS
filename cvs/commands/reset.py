@@ -1,4 +1,4 @@
-from cvsdomain import Command, System
+from cvs import Command, System
 from datetime import datetime
 from pathlib import Path
 import os

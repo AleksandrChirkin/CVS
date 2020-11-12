@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from cvsdomain import System
+from cvs import System
 
 
 class Command:
