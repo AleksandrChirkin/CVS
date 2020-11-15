@@ -17,7 +17,7 @@
 * Файл покрытия: '.coverage'
 
 ## Запуск
-* 'python3 cvs.py [аргументы CVS] команда CVS [аргументы команды]'
+* 'python3 benchmark/__main__.py [аргументы CVS] команда CVS [аргументы команды]'
 * Для запуска тестов введите 'python3 -m pytest --tb=line --cov=. .' или 'pytest'
 
 ## Команды

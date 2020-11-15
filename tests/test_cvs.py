@@ -11,7 +11,7 @@ from cvs import Init, Add, Commit, Reset, Log, System  # noqa
 
 
 class TestCVS(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.slash = System.get_slash()
         self.levels = os.getcwd().split(self.slash)
         if os.path.exists('.repos'):
@@ -25,7 +25,7 @@ class TestCVS(unittest.TestCase):
                              recreate=False, ignore_all=False,
                              ignore_most=False)).run()
 
-    def test_init(self):
+    def test_init(self) -> None:
         if os.path.exists('.repos'):
             os.remove('.repos/history.json')
             os.rmdir('.repos/diffs')
@@ -46,7 +46,7 @@ class TestCVS(unittest.TestCase):
             self.assertEqual(data['Contents: '][0]['Message: '],
                              'Repository created.')
 
-    def test_add(self):
+    def test_add(self) -> None:
         System(Namespace(command=Add, directory=os.getcwd(),
                          files=['README.md'], no_logging=False,
                          message='Hello, Python!',
@@ -63,7 +63,7 @@ class TestCVS(unittest.TestCase):
             self.assertEqual(data['Contents: '][1]['Note: '],
                              'Hello, Python!')
 
-    def test_first_commit(self):
+    def test_first_commit(self) -> None:
         self.make_commit('1.0')
         self.assertFalse(os.path.exists('repos/add_list.cvs'))
         self.assertTrue(os.path.exists
@@ -77,7 +77,7 @@ class TestCVS(unittest.TestCase):
             self.assertEqual(data['Contents: '][2]['Note: '],
                              'Hello, Python!')
 
-    def test_non_first_commit(self):
+    def test_non_first_commit(self) -> None:
         self.make_commit('1.0')
         with open('README.md', 'a') as readme:
             readme.write(' ')
@@ -85,7 +85,7 @@ class TestCVS(unittest.TestCase):
         revisions = next(os.walk('.repos/revisions'))
         self.assertEqual(len(revisions[1]), 2)
 
-    def test_reset(self):
+    def test_reset(self) -> None:
         self.make_commit('1.0')
         start_time = int(time.time())
         System(Namespace(command=Reset, directory=os.getcwd(),
@@ -103,7 +103,7 @@ class TestCVS(unittest.TestCase):
                              '{}/README.md was reset from revision 1.0.'
                              .format(os.getcwd()))
 
-    def test_correct_log(self):
+    def test_correct_log(self) -> None:
         self.make_commit('1.0')
         System(Namespace(command=Log, dates='<={}'.format(date.today()),
                          directory=os.getcwd(), files=['README.md'],
@@ -118,7 +118,7 @@ class TestCVS(unittest.TestCase):
         exc_type, value, traceback = sys.exc_info()
         self.assertIsNone(exc_type)
 
-    def test_incorrect_log(self):
+    def test_incorrect_log(self) -> None:
         self.make_commit('1.0')
         System(Namespace(command=Log,
                          dates='{}>=notadate'.format(date.today()),
@@ -129,7 +129,7 @@ class TestCVS(unittest.TestCase):
         self.assertRaises(ValueError)
 
     @staticmethod
-    def make_commit(revision: str):
+    def make_commit(revision: str) -> None:
         System(Namespace(command=Add, directory=os.getcwd(),
                          files=['README.md'], no_logging=False,
                          message='Hello, Python!',
@@ -141,7 +141,7 @@ class TestCVS(unittest.TestCase):
                          revision=revision, ignore_all=False,
                          ignore_most=False)).run()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         with open('README.md', 'r+') as readme:
             lines = readme.readlines()
             if lines[-1] == ' ':

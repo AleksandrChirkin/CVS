@@ -1,10 +1,10 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from cvs import Init, Add, Commit, Reset, Log, System, COMMANDS
 import os
 
 
-def parse_args():
+def parse_args() -> Namespace:
     parser = ArgumentParser(description='Concurrent Versions cvs')
     parser.add_argument('-d', '--directory', default=Path(os.getcwd()),
                         help='Searches repository in other directory')

@@ -5,7 +5,7 @@ import os
 
 
 class System:
-    def __init__(self, arguments: Namespace):
+    def __init__(self, arguments: Namespace) -> None:
         self.arguments = arguments
         self.directory = arguments.directory
         self.repository = Path('{}/.repos'.format(self.directory))
