@@ -1,5 +1,6 @@
 from argparse import Namespace
 from datetime import date
+from pathlib import Path
 import json
 import os
 import sys
@@ -27,9 +28,9 @@ class TestCVS(unittest.TestCase):
 
     def test_init(self) -> None:
         if os.path.exists('.repos'):
-            os.remove('.repos/history.json')
-            os.rmdir('.repos/diffs')
-            os.rmdir('.repos/revisions')
+            os.remove(Path('.repos/history.json'))
+            os.rmdir(Path('.repos/diffs'))
+            os.rmdir(Path('.repos/revisions'))
             os.rmdir('.repos')
         if os.path.exists('.cvsignore'):
             os.remove('.cvsignore')
@@ -38,10 +39,10 @@ class TestCVS(unittest.TestCase):
                          recreate=False, ignore_all=False,
                          ignore_most=False)).run()
         self.assertTrue(os.path.exists('.cvsignore'))
-        self.assertTrue(os.path.exists('.repos/diffs'))
-        self.assertTrue(os.path.exists('.repos/revisions'))
-        self.assertTrue(os.path.exists('.repos/history.json'))
-        with open('.repos/history.json') as history:
+        self.assertTrue(os.path.exists(Path('.repos/diffs')))
+        self.assertTrue(os.path.exists(Path('.repos/revisions')))
+        self.assertTrue(os.path.exists(Path('.repos/history.json')))
+        with open(Path('.repos/history.json')) as history:
             data = json.load(history)
             self.assertEqual(data['Contents: '][0]['Message: '],
                              'Repository created.')
@@ -52,11 +53,11 @@ class TestCVS(unittest.TestCase):
                          message='Hello, Python!',
                          no_disk_changes=False, ignore_all=False,
                          ignore_most=False)).run()
-        self.assertTrue(os.path.exists('.repos/add_list.cvs'))
-        with open('.repos/add_list.cvs') as add_list:
+        self.assertTrue(os.path.exists(Path('.repos/add_list.cvs')))
+        with open(Path('.repos/add_list.cvs')) as add_list:
             self.assertEqual('{}/README.md->self'.format(os.getcwd()),
                              add_list.readline()[:-1])
-        with open('.repos/history.json') as history:
+        with open(Path('.repos/history.json')) as history:
             data = json.load(history)
             self.assertEqual(data['Contents: '][1]['Message: '],
                              '{0}/README.md was added.'.format(os.getcwd()))
@@ -65,11 +66,11 @@ class TestCVS(unittest.TestCase):
 
     def test_first_commit(self) -> None:
         self.make_commit('1.0')
-        self.assertFalse(os.path.exists('repos/add_list.cvs'))
+        self.assertFalse(os.path.exists(Path('repos/add_list.cvs')))
         self.assertTrue(os.path.exists
-                        ('.repos/revisions/1.0/{}/README.md'
-                         .format(self.slash.join(self.levels[1:]))))
-        with open('.repos/history.json') as history:
+                        (Path('.repos/revisions/1.0/{}/README.md'
+                         .format(self.slash.join(self.levels[1:])))))
+        with open(Path('.repos/history.json')) as history:
             data = json.load(history)
             self.assertEqual(data['Contents: '][2]['Message: '],
                              '{}/README.md was committed to revision 1.0.'
@@ -93,11 +94,11 @@ class TestCVS(unittest.TestCase):
                          no_disk_changes=False, revision=None,
                          ignore_all=False, ignore_most=False)).run()
         with open('README.md') as file,\
-                open('.repos/revisions/1.0/{}/README.md'
+                open(Path('.repos/revisions/1.0/{}/README.md')
                      .format(self.slash.join(self.levels[1:]))) as version:
             self.assertEqual(file.readlines(), version.readlines())
         self.assertLessEqual(start_time, os.path.getmtime('README.md'))
-        with open('.repos/history.json') as history:
+        with open(Path('.repos/history.json')) as history:
             data = json.load(history)
             self.assertEqual(data['Contents: '][3]['Message: '],
                              '{}/README.md was reset from revision 1.0.'
