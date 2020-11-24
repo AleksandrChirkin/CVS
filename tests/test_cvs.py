@@ -96,7 +96,7 @@ class TestCVS(unittest.TestCase):
                 open('.repos/revisions/1.0/{}/README.md'
                      .format(self.slash.join(self.levels[1:]))) as version:
             self.assertEqual(file.readlines(), version.readlines())
-        self.assertLessEqual(start_time, os.path.getmtime('README.md'))
+        self.assertGreaterEqual(start_time, os.path.getmtime('README.md'))
         with open('.repos/history.json') as history:
             data = json.load(history)
             self.assertEqual(data['Contents: '][3]['Message: '],
