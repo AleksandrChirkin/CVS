@@ -17,7 +17,8 @@ class Commit(Command):
                 raise CVSError(Commit, 'None of files had been added')
             branch = system.get_branch()
             revision = Revision(message=system.arguments['message'],
-                                diffs=[])
+                                diffs=[], id=uuid.uuid4().hex,
+                                timestamp=datetime.now())
             with open(system.add_list, encoding='utf-8') as files:
                 for file in json.load(files):
                     if Path.exists(Path(file)):

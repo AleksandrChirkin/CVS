@@ -24,7 +24,8 @@ class Reset(Command):
 
     def reset(self, system: System, file: Path) -> None:
         branch = system.get_branch()
-        not_found_msg = '{} was not reset because his source was not found in repository'.format(file)
+        not_found_msg = '{} was not reset because his source' \
+                        ' was not found in repository'.format(file)
         if file not in branch.source:
             if not system.arguments['ignore_all']:
                 print(not_found_msg)
@@ -64,7 +65,8 @@ class Reset(Command):
         file_lines = file_diff.diff.split('\n')
         diff_lines = diff.diff.split('\n')
         system.restore_file(file_lines, diff_lines)
-        if not system.arguments['ignore_all'] and not system.arguments['ignore_most']:
+        if not system.arguments['ignore_all'] and\
+                not system.arguments['ignore_most']:
             print('{} was reset from branch {}, rev {}'
                   .format(file, branch.name, source_rev.id))
         if not system.arguments['no_disk_changes']:

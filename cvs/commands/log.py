@@ -15,11 +15,12 @@ class Log(Command):
         for item in log["Contents: "]:
             if system.arguments['branches'] is not None:
                 for branch in system.arguments['branches']:
-                    if branch not in next(os.walk(system.branches))[2]:
+                    if '{}.json'.format(branch) not\
+                            in next(os.walk(system.branches))[2]:
                         raise CVSError(Log,
                                        'ERROR: Branch {} does not exist!'
                                        .format(branch))
-                    if branch in item["Message: "]:
+                    if branch in item["Comment: "]:
                         break
                 else:
                     continue
@@ -29,17 +30,18 @@ class Log(Command):
                 continue
             if system.arguments['files'] is not None:
                 for file in system.arguments['files']:
-                    if file in item["Message: "]:
+                    if file in item["Comment: "]:
                         break
                 else:
                     continue
             if system.arguments['revisions'] is not None:
                 for revision in system.arguments['revisions']:
-                    if revision not in next(os.walk(system.revisions))[2]:
+                    if '{}.json'.format(revision) not\
+                            in next(os.walk(system.revisions))[2]:
                         raise CVSError(Log,
                                        'ERROR: Revision {} does not exist!'
                                        .format(revision))
-                    if revision in item["Message: "]:
+                    if revision in item["Comment: "]:
                         break
                 else:
                     continue

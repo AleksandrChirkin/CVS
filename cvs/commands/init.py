@@ -44,11 +44,12 @@ class Init(Command):
                 if not system.arguments['ignore_all'] and \
                         not system.arguments['ignore_most']:
                     print(Path("{}/{} removed".format(element[0], folder)))
-        if not system.arguments['no_disk_changes']:
-            os.remove(system.cvsignore)
-        if not system.arguments['ignore_all'] and \
-                not system.arguments['ignore_most']:
-            print(".cvsignore file in {} removed".format(system.directory))
+        if Path.exists(system.cvsignore):
+            if not system.arguments['no_disk_changes']:
+                os.remove(system.cvsignore)
+            if not system.arguments['ignore_all'] and \
+                    not system.arguments['ignore_most']:
+                print(".cvsignore file in {} removed".format(system.directory))
         if not system.arguments['no_disk_changes']:
             os.rmdir(system.repository)
         if not system.arguments['ignore_all'] and \
@@ -94,6 +95,11 @@ class Init(Command):
         if not system.arguments['ignore_all'] and \
                 not system.arguments['ignore_most']:
             print('Diffs folder created')
+        if not system.arguments['no_disk_changes']:
+            os.mkdir(system.tags)
+        if not system.arguments['ignore_all'] and \
+                not system.arguments['ignore_most']:
+            print('Tags folder created')
         self.make_cvsignore(system)
         self.make_error_log(system)
 
@@ -102,7 +108,7 @@ class Init(Command):
         if not system.arguments['no_disk_changes']:
             shutil.copyfile(Path('{}/.gitignore'.format(system.directory)),
                             system.cvsignore)
-            with open(system.cvsignore, 'a', encoding='utf-8') as cvsignore:
+            with open(system.cvsignore, 'a+', encoding='utf-8') as cvsignore:
                 cvsignore.write('\n.git')
         if not system.arguments['ignore_all'] and \
                 not system.arguments['ignore_most']:

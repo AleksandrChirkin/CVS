@@ -1,8 +1,12 @@
 from argparse import ArgumentParser
-from cvs import CVSError, System, COMMANDS
 from pathlib import Path
 from typing import Any, Dict
 import json
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             os.path.pardir))
+from cvs import CVSError, System, COMMANDS  # noqa
 
 
 def parse_args() -> Dict[str, Any]:

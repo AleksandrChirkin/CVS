@@ -38,7 +38,7 @@ class Add(Command):
         parser.add_argument('files', nargs='+', help='Files names')
 
     def add(self, system: System, file: Path) -> None:
-        if self.is_in_cvsignore(system, str(file)):
+        if system.is_in_cvsignore(str(file)):
             if not system.arguments['ignore_all']:
                 print('{} was ignored because it is in .cvsignore'
                       .format(file))
@@ -49,7 +49,7 @@ class Add(Command):
             else:
                 added = []
             for item in added:
-                if item == str(Path):
+                if item == str(Path(file)):
                     if not system.arguments['ignore_all']:
                         print('{} had already been added'.format(file))
                     break
@@ -65,17 +65,6 @@ class Add(Command):
                 if not system.arguments['no_disk_changes'] and\
                         not system.arguments['no_logging']:
                     self.update_log(system, file)
-
-    @staticmethod
-    def is_in_cvsignore(system: System, file: str) -> bool:
-        if not Path.exists(Path(system.cvsignore)):
-            return False
-        with open(system.cvsignore, encoding='utf-8') as cvsignore:
-            ignored = cvsignore.readlines()
-        for item in ignored:
-            if item[:-1] in file:
-                return True
-        return False
 
     @staticmethod
     def update_log(system: System, file: Path) -> None:

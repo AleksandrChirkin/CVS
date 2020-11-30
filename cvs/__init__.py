@@ -8,6 +8,8 @@ from cvs.commands.commit import Commit
 from cvs.commands.reset import Reset
 from cvs.commands.log import Log
 from cvs.commands.checkout import Checkout
+from cvs.commands.tag import Tag
 
-COMMANDS = [Init, Add, Commit, Reset, Log, Checkout]
-__all__ = ['Init', 'Add', 'Commit', 'Reset', 'Log', 'Checkout', COMMANDS]
+COMMANDS = [Init, Add, Commit, Reset, Log, Checkout, Tag]
+__all__ = ['Init', 'Add', 'Commit', 'Reset', 'Log', 'Checkout', 'Tag',
+           COMMANDS]

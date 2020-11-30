@@ -1,11 +1,9 @@
-from argparse import Namespace
-from datetime import date
 from pathlib import Path
 import json
 import os
 import sys
+import tests
 import unittest
-import time
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
 from cvs import Init, Add, Commit, Reset, Log, Checkout, System  # noqa
@@ -13,10 +11,30 @@ from cvs import Init, Add, Commit, Reset, Log, Checkout, System  # noqa
 
 class TestCVS(unittest.TestCase):
     def setUp(self) -> None:
-        pass
+        self.system = System({
+            'directory': Path.cwd(),
+            'no_logging': False,
+            'no_disk_changes': False,
+            'ignore_all': False,
+            'ignore_most': False,
+            'command': Init,
+            'recreate': Path.exists(Path.cwd() / '.repos')
+        })
+        self.system.run()
 
-    def tearDown(self) -> None:
-        pass
+    def test_is_in_cvsignore(self) -> None:
+        self.assertTrue(self.system.is_in_cvsignore('.gitignore'))
+        self.assertFalse(self.system.is_in_cvsignore
+                         (str(Path.cwd()/'tests/test_cvs.py')))
+
+    def test_get_branch(self) -> None:
+        system = tests.make_first_commit()
+        branch = system.get_branch()
+        self.assertTrue(branch.name, 'master')
+        self.assertEqual(len(branch.revisions), 1)
+        revision = branch.revisions[0]
+        with open(system.add_list) as add_list:
+            self.assertEqual(len(revision.diffs), len(json.load(add_list)))
 
 
 if __name__ == '__main__':

@@ -1,7 +1,9 @@
 from cvs import Branch, Diff, DiffKind, Revision
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 import json
+import uuid
 
 
 class System:
@@ -13,11 +15,22 @@ class System:
         self.branches = Path('{}/branches'.format(self.repository))
         self.diffs = Path('{}/diffs'.format(self.repository))
         self.revisions = Path('{}/revisions'.format(self.repository))
+        self.tags = Path('{}/tags'.format(self.repository))
         self.add_list = Path('{}/add_list.json'.format(self.repository))
         self.cvsignore = Path('{}/.cvsignore'.format(self.directory))
 
     def run(self) -> None:
         self.arguments['command']().run(self)
+
+    def is_in_cvsignore(self, file: str) -> bool:
+        if not Path.exists(Path(self.cvsignore)):
+            return False
+        with open(self.cvsignore, encoding='utf-8') as cvsignore:
+            ignored = cvsignore.readlines()
+        for item in ignored:
+            if item[:-1] in file:
+                return True
+        return False
 
     def get_branch(self) -> Branch:
         branch_path = Path('{}/{}.json'.format(self.branches,
@@ -38,7 +51,8 @@ class System:
 
     def get_revision(self, name: str) -> Revision:
         revision_path = Path('{}/{}.json'.format(self.revisions, name))
-        revision = Revision(diffs=[], message='')
+        revision = Revision(diffs=[], message='', id=uuid.uuid4().hex,
+                            timestamp=datetime.now())
         with open(revision_path, encoding='utf-8') as rev_file:
             revision_info = json.load(rev_file)
             revision.message = revision_info['Message: ']
@@ -70,6 +84,8 @@ class System:
     def restore_file(file_lines: List[str], diff_lines: List[str]) -> None:
         files_margin = 0
         for i in range(len(diff_lines)):
+            if len(diff_lines[i]) == 0:
+                continue
             if diff_lines[i][0] == '+':
                 file_lines.pop(i - files_margin)
                 files_margin += 1
