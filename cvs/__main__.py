@@ -1,50 +1,50 @@
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
+from cvs import CVSError, System, COMMANDS
 from pathlib import Path
-from cvs import Init, Add, Commit, Reset, Log, System, COMMANDS
-import os
+from typing import Any, Dict
+import json
 
 
-def parse_args() -> Namespace:
+def parse_args() -> Dict[str, Any]:
     parser = ArgumentParser(description='Concurrent Versions cvs')
-    parser.add_argument('-d', '--directory', default=Path(os.getcwd()),
+    parser.add_argument('-d', '--directory', default=Path.cwd(),
                         help='Searches repository in other directory')
-    parser.add_argument('-l', '--no_logging', action='store_true',
+    parser.add_argument('-l', '--no-logging', action='store_true',
                         help='Executes command without logging it')
-    parser.add_argument('-n', '--no_disk_changes', action='store_true',
+    parser.add_argument('-n', '--no-disk-changes', action='store_true',
                         help='Try to execute command without disk changes')
     output_group = parser.add_mutually_exclusive_group()
-    output_group.add_argument('-Q', '--ignore_all', action='store_true',
+    output_group.add_argument('-Q', '--ignore-all', action='store_true',
                               help='Ignores all messages, except for errors')
-    output_group.add_argument('-q', '--ignore_most', action='store_true',
+    output_group.add_argument('-q', '--ignore-most', action='store_true',
                               help='Ignores some messages')
     subparsers = parser.add_subparsers(title='command')
     for command in COMMANDS:
-        if command is System:
-            continue
-        _parser = subparsers.add_parser(command.__name__.lower(),
-                                        help=command.__doc__)
-        _parser.set_defaults(command=command)
-        if command is Init:
-            _parser.add_argument('-r', '--recreate', action='store_true',
-                                 help='Recreates repository')
-        elif command is Add:
-            _parser.add_argument('-m', '--message', default='',
-                                 help='Log message')
-            _parser.add_argument('files', nargs='+', help='Files names')
-        elif command is Commit:
-            _parser.add_argument('-m', '--message', default='',
-                                 help='Log message')
-            _parser.add_argument('-rev', '--revision', help='Revision number')
-        elif command is Reset:
-            _parser.add_argument('-rev', '--revision', help='Revision number')
-            _parser.add_argument('files', nargs='+', help='File name')
-        elif command is Log:
-            _parser.add_argument('-dates', help='Time interval')
-            _parser.add_argument('-files',  nargs='+', help='Files names')
-            _parser.add_argument('-revisions', nargs='+',
-                                 help='Revisions numbers')
-    return parser.parse_args()
+        command().set_parser(subparsers)
+    space = parser.parse_args().__dict__
+    arguments = {}
+    for argument in space:
+        if argument[0] != '_':
+            arguments[argument] = space[argument]
+    return arguments
 
 
 if __name__ == '__main__':
-    System(parse_args()).run()
+    try:
+        System(parse_args()).run()
+    except CVSError as err:
+        try:
+            print('FAILED: CVS Error occurred during execution')
+            error_log = Path('{}/.repos/errorlog.json'.format(Path.cwd()))
+            with open(error_log, encoding='utf-8') as log:
+                errors = json.load(log)
+            exc_message = {
+                'Class': err.command,
+                'Message': err.txt
+            }
+            errors['Errors List: '].append(exc_message)
+            with open(error_log, 'w', encoding='utf-8') as log:
+                json.dump(errors, log, indent=4)
+            print('You can investigate exception in error log in repository')
+        finally:
+            exit(1)
