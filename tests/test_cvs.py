@@ -1,4 +1,5 @@
 from pathlib import Path
+from argparse import ArgumentParser
 import json
 import os
 import sys
@@ -6,7 +7,7 @@ import tests
 import unittest
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
-from cvs import Init, Add, Commit, Reset, Log, Checkout, System  # noqa
+from cvs import Init, System, COMMANDS  # noqa
 
 
 class TestCVS(unittest.TestCase):
@@ -21,6 +22,10 @@ class TestCVS(unittest.TestCase):
             'recreate': Path.exists(Path.cwd() / '.repos')
         })
         self.system.run()
+        parser = ArgumentParser()
+        subparsers = parser.add_subparsers()
+        for command in COMMANDS:
+            command().set_parser(subparsers)
 
     def test_is_in_cvsignore(self) -> None:
         self.assertTrue(self.system.is_in_cvsignore('.gitignore'))

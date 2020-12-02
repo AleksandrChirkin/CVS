@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 import json
 import os
@@ -7,7 +7,7 @@ import tests
 import unittest
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
-from cvs import Init, Add, Commit, Reset, Log, Checkout, Tag, System  # noqa
+from cvs import Init, Add, Commit, Reset, Log, Checkout, Tag, System, COMMANDS  # noqa
 
 
 class TestCommands(unittest.TestCase):
@@ -154,8 +154,39 @@ class TestCommands(unittest.TestCase):
             'ignore_most': False,
             'command': Log,
             'branches': ['master'],
-            'dates': str(datetime.today()),
+            'dates': str(date.today()),
             'files': ['README.md'],
+            'revisions': [next(os.walk(Path.cwd()/'.repos/revisions'))
+                          [2][-1][:-5]]
+        }).run()
+        System({
+            'directory': Path.cwd(),
+            'no_logging': False,
+            'no_disk_changes': False,
+            'ignore_all': False,
+            'ignore_most': False,
+            'command': Log,
+            'branches': ['master'],
+            'dates': '{0}>{0}'.format(date.today()),
+            'files': ['README.md'],
+            'revisions': [next(os.walk(Path.cwd() / '.repos/revisions'))
+                          [2][-1]]
+        }).run()
+        exc_type, value, traceback = sys.exc_info()
+        self.assertIsNone(exc_type)
+
+    def test_log_with_defaults(self) -> None:
+        tests.make_first_commit()
+        System({
+            'directory': Path.cwd(),
+            'no_logging': False,
+            'no_disk_changes': False,
+            'ignore_all': False,
+            'ignore_most': False,
+            'command': Log,
+            'branches': None,
+            'dates': None,
+            'files': None,
             'revisions': None
         }).run()
         exc_type, value, traceback = sys.exc_info()
@@ -173,10 +204,7 @@ class TestCommands(unittest.TestCase):
             'ignore_all': False,
             'ignore_most': False,
             'command': Checkout,
-            'branch': 'master',
-            'dates': str(datetime.today()),
-            'files': ['tests/test_file.txt'],
-            'revisions': None
+            'branch': 'master'
         }).run()
         with open('tests/test_file.txt', encoding='utf-8') as readme:
             self.assertEqual(''.join(readme.readlines()), readme_content)
