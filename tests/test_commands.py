@@ -126,7 +126,7 @@ class TestCommands(unittest.TestCase):
         self.assertTrue(len(next(os.walk(system.diffs))[2]), 2*len(added))
 
     def test_reset(self) -> None:
-        tests.make_first_commit()
+        system = tests.make_first_commit()
         with open('tests/test_file.txt', 'r+', encoding='utf-8') as readme:
             readme_content = ''.join(readme.readlines())
             readme.write(' ')
@@ -139,7 +139,7 @@ class TestCommands(unittest.TestCase):
             'command': Reset,
             'branch': 'master',
             'files': ['tests/test_file.txt'],
-            'revision': None
+            'revision': next(os.walk(system.revisions))[2][-1][:-5]
         }).run()
         with open('tests/test_file.txt', encoding='utf-8') as readme:
             self.assertEqual(''.join(readme.readlines()), readme_content)
