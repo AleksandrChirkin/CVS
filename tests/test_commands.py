@@ -7,7 +7,7 @@ import tests
 import unittest
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
-from cvs import Init, Add, Commit, Reset, Log, Checkout, Tag, System # noqa
+from cvs import Init, Add, Commit, Reset, Log, Checkout, Tag, System  # noqa
 
 
 class TestCommands(unittest.TestCase):

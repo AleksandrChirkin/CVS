@@ -1,6 +1,6 @@
-from cvs.cvserror import CVSError # noqa
-from cvs.cvsclasses import * # noqa
-from cvs.system import System # noqa
+from cvs.cvserror import CVSError  # noqa
+from cvs.cvsclasses import *  # noqa
+from cvs.system import System  # noqa
 from cvs.commands.command import Command  # noqa
 from cvs.commands.init import Init
 from cvs.commands.add import Add
