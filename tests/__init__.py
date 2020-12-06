@@ -3,8 +3,7 @@ from pathlib import Path
 
 
 def make_first_commit() -> System:
-    add_files()
-    system = System(Path.cwd())
+    system = add_files()
     system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                ignore_most=False, command=Commit, branch='master',
                message='Test message')
