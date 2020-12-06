@@ -1,7 +1,8 @@
-from cvs import Command, CVSError, System
+from cvs import Command, CVSError
 from datetime import date, datetime
 from typing import Tuple
 import json
+import logging
 import os
 
 
@@ -9,43 +10,47 @@ class Log(Command):
     """
     Prints info about file and catalog history.
     """
-    def run(self, system: System) -> None:
-        with open(system.history, encoding='utf-8') as history:
-            log = json.load(history)
-        for item in log["Contents: "]:
-            if system.arguments['branches'] is not None:
-                for branch in system.arguments['branches']:
-                    if '{}.json'.format(branch) not\
-                            in next(os.walk(system.branches))[2]:
-                        raise CVSError(Log,
-                                       'ERROR: Branch {} does not exist!'
-                                       .format(branch))
-                    if branch in item["Comment: "]:
-                        break
-                else:
+    def run(self) -> None:
+        try:
+            with self.system.history.open(encoding='utf-8') as history:
+                log = json.load(history)
+            for item in log["Contents: "]:
+                if self.arguments['branches'] is not None:
+                    for branch in self.arguments['branches']:
+                        if '{}.json'.format(branch) not\
+                                in next(os.walk(self.system.branches))[2]:
+                            raise CVSError(Log,
+                                           'Branch {} does not exist!'
+                                           .format(branch))
+                        if branch in item["Comment: "]:
+                            break
+                    else:
+                        continue
+                if self.arguments['dates'] is not None and\
+                        not self.is_date_in_interval(item["Date, time: "]
+                                                     [0:10],
+                                                     self.arguments['dates']):
                     continue
-            if system.arguments['dates'] is not None and\
-                    not self.is_date_in_interval(item["Date, time: "][0:10],
-                                                 system.arguments['dates']):
-                continue
-            if system.arguments['files'] is not None:
-                for file in system.arguments['files']:
-                    if file in item["Comment: "]:
-                        break
-                else:
-                    continue
-            if system.arguments['revisions'] is not None:
-                for revision in system.arguments['revisions']:
-                    if '{}.json'.format(revision) not\
-                            in next(os.walk(system.revisions))[2]:
-                        raise CVSError(Log,
-                                       'ERROR: Revision {} does not exist!'
-                                       .format(revision))
-                    if revision in item["Comment: "]:
-                        break
-                else:
-                    continue
-            print(' '.join(item.values()))
+                if self.arguments['files'] is not None:
+                    for file in self.arguments['files']:
+                        if file in item["Comment: "]:
+                            break
+                    else:
+                        continue
+                if self.arguments['revisions'] is not None:
+                    for revision in self.arguments['revisions']:
+                        if '{}.json'.format(revision) not\
+                                in next(os.walk(self.system.revisions))[2]:
+                            raise CVSError(Log,
+                                           'Revision {} does not exist!'
+                                           .format(revision))
+                        if revision in item["Comment: "]:
+                            break
+                    else:
+                        continue
+                logging.info(' '.join(item.values()))
+        except Exception as err:
+            raise CVSError(Log, str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('log')
@@ -76,7 +81,7 @@ class Log(Command):
                 time_span = self.date_span(interval, '>')
                 return time_span[0] > date_item > time_span[1]
         except ValueError:
-            raise CVSError(Log, 'ERROR: Incorrect date or date range format')
+            raise CVSError(Log, 'Incorrect date or date range format')
 
     @staticmethod
     def date_span(interval: str, separator: str) -> Tuple[date, date]:

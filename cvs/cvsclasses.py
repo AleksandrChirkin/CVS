@@ -27,7 +27,7 @@ class Revision:
 
 
 @dataclass
-class Branch:
+class CVSBranch:
     name: str
     revisions: List[Revision]
     source: Dict[str, Revision]

@@ -1,3 +1,3 @@
 [tool.coverage.run]
 source = ["cvs"]
-omit=["*/__main__.py", '.venv/']
+omit=["*/__main__.py", ".venv/"]

@@ -1,9 +1,10 @@
-from cvs import Branch, Diff, DiffKind, Command, CVSError, Revision, \
-    System
+from cvs import CVSBranch, Diff, DiffKind, Command, CVSError, Revision
 from datetime import datetime
 from pathlib import Path
 import difflib
 import json
+import logging
+import os
 import uuid
 
 
@@ -11,31 +12,42 @@ class Commit(Command):
     """
     Commits files to repository.
     """
-    def run(self, system: System) -> None:
+    def run(self) -> None:
         try:
-            if not Path.exists(system.add_list):
-                raise CVSError(Commit, 'None of files had been added')
-            branch = system.get_branch()
-            revision = Revision(message=system.arguments['message'],
+            branch = self.get_branch()
+            revision = Revision(message=self.arguments['message'],
                                 diffs=[], id=uuid.uuid4().hex,
                                 timestamp=datetime.now())
-            with open(system.add_list, encoding='utf-8') as files:
-                for file in json.load(files):
-                    if Path.exists(Path(file)):
-                        if file not in branch.source.keys():
+            for item in os.walk(self.system.directory):
+                for route in item[2]:
+                    file = Path(item[0])/route
+                    if self.system.is_in_cvsignore(str(file)):
+                        continue
+                    if file.exists():
+                        relative_route = file.relative_to(self.system.
+                                                          directory)
+                        if str(relative_route) not in branch.source.keys():
                             self.add(file, branch, revision)
                         else:
-                            self.change(system, file, branch, revision)
+                            self.change(file, branch, revision)
                     elif file in branch.source.keys():
-                        self.delete(file, revision, system)
+                        self.delete(file, revision)
             branch.revisions.append(revision)
-            self.enforce_commit(branch, system)
-            if not system.arguments['ignore_all']:
-                last_rev = branch.revisions[-1]
-                print('{} files were committed to branch {} (rev {})'
-                      .format(len(last_rev.diffs), branch.name, last_rev.id))
-        except OSError as err:
-            raise CVSError(Commit, str(err.__traceback__))
+            self.enforce_commit(branch)
+            if self.system.tagged.exists():
+                for tagged_file in next(os.walk(self.system.tagged))[2]:
+                    os.remove(self.system.tagged/tagged_file)
+                os.rmdir(self.system.tagged)
+            if self.system.add_list.exists():
+                os.remove(self.system.add_list)
+            last_rev = branch.revisions[-1]
+            if len(last_rev.diffs) > 0:
+                if not self.arguments['ignore_all']:
+                    logging.info('{} files were committed to branch {} '
+                                 '(rev {})'.format(len(last_rev.diffs),
+                                                   branch.name, last_rev.id))
+        except Exception as err:
+            raise CVSError(Commit, str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('commit')
@@ -45,139 +57,117 @@ class Commit(Command):
         parser.add_argument('-b', '--branch', default='master',
                             help='Branch name')
 
-    @staticmethod
-    def add(file: str, branch: Branch, revision: Revision) -> None:
-        with open(Path(file), encoding='utf-8') as content:
-            diff = ''.join(content.readlines())
-        diff = Diff(id=uuid.uuid4().hex,
-                    kind=DiffKind.ADD, file=file, diff=diff)
+    def add(self, file: Path, branch: CVSBranch, revision: Revision) -> None:
+        relative_path = file.relative_to(self.system.directory)
+        if self.system.add_list.exists():
+            with self.system.add_list.open(encoding='utf-8') as add_list:
+                added = json.load(add_list)
+        else:
+            added = {}
+        if str(relative_path) in added.keys():
+            with Path(self.system.tagged/added[str(relative_path)])\
+                    .open(encoding='utf-8') as tagged:
+                diff_text = ''.join(tagged.readlines())
+        else:
+            with file.open(encoding='utf-8') as content:
+                diff_text = ''.join(content.readlines())
+        diff = Diff(id=uuid.uuid4().hex, kind=DiffKind.ADD,
+                    file=str(relative_path), diff=diff_text)
         revision.diffs.append(diff)
-        branch.source[file] = revision
+        branch.source[str(relative_path)] = revision
 
-    def change(self, system: System, file: str, branch: Branch,
+    def change(self, file: Path, branch: CVSBranch,
                revision: Revision) -> None:
-        if not self.is_file_modified(system, branch, file):
-            if not system.arguments['ignore_all']:
-                print('{} was not committed because it had not been modified'
-                      ' since last revision'.format(file))
+        relative_path = file.relative_to(self.system.directory)
+        if not self.is_file_modified(branch, file):
+            if not self.arguments['ignore_all']:
+                logging.warning('{} was not committed because '
+                                'it had not been modified'
+                                ' since last revision'.format(relative_path))
             return
         original = self.get_original_version(branch, file).diff
-        with open(file, encoding='utf-8') as current:
-            current_content = ''.join(current.readlines())
+        if self.system.add_list.exists():
+            with self.system.add_list.open(encoding='utf-8') as add_list:
+                added = json.load(add_list)
+        else:
+            added = {}
+        if str(relative_path) in added.keys():
+            with Path(self.system.tagged/added[str(relative_path)])\
+                    .open(encoding='utf-8') as tagged:
+                current_content = ''.join(tagged.readlines())
+        else:
+            with Path(file).open(encoding='utf-8') as current:
+                current_content = ''.join(current.readlines())
         diff_iter = difflib.ndiff(original.split('\n'),
                                   current_content.split('\n'))
         diff_content = ''
         for item in diff_iter:
-            diff_content += item
-        diff = Diff(id=uuid.uuid4().hex,
-                    kind=DiffKind.CHANGE, file=file, diff=diff_content)
+            diff_content += item+'\n'
+        diff = Diff(id=uuid.uuid4().hex, kind=DiffKind.CHANGE,
+                    file=str(relative_path), diff=diff_content.strip())
         revision.diffs.append(diff)
 
-    def is_file_modified(self, system: System, branch: Branch,
-                         file: str) -> bool:
-        lines_modified = 0
-        last_version = self.get_last_file_version(system, branch, file)
-        with open(file, encoding='utf-8') as current:
-            current_version = ''.join(current.readlines())
-        diff_iter = difflib.ndiff(current_version.split('\n'),
-                                  last_version.split('\n'))
-        for line in diff_iter:
-            if line[0] == '+' or line[0] == '-' or line[0] == '?':
-                lines_modified += 1
-        return lines_modified > 0
-
-    def get_last_file_version(self, system: System, branch: Branch,
-                              file: str) -> str:
-        last_diff = self.get_original_version(branch, file)
-        original = last_diff.diff.split('\n')
-        last_revision = branch.source[file]
-        new_versions = branch.revisions[branch.revisions
-                                        .index(last_revision)+1:]
-        for revision in new_versions:
-            for diff in revision.diffs:
-                if diff.file == file:
-                    last_revision = revision
-                    last_diff = diff
-        if last_revision == branch.source[file]:
-            return '\n'.join(original)
-        diff_lines = last_diff.diff.split('\n')
-        system.restore_file(original, diff_lines)
-        return '\n'.join(original)
-
-    @staticmethod
-    def get_original_version(branch: Branch, file: str) -> Diff:
-        last_revision = branch.source[file]
-        for diff in last_revision.diffs:
-            if diff.file == file:
-                last_diff = diff
-                break
-        else:
-            raise CVSError(Commit, 'No source fo file {} found'.format(file))
-        return last_diff
-
-    @staticmethod
-    def delete(file: str, revision: Revision, system: System) -> None:
-        with open(system.add_list, encoding='utf-8') as add_list:
-            added = json.load(add_list)
-        added.remove(file)
-        with open(system.add_list, 'w', encoding='utf-8') as add_list:
-            json.dump(added, add_list, indent=4)
-        change = Diff(id=uuid.uuid4().hex,
-                      kind=DiffKind.DELETE, file=file, diff=None)
+    def delete(self, file: Path, revision: Revision) -> None:
+        relative_path = file.relative_to(self.system.directory)
+        change = Diff(id=uuid.uuid4().hex, kind=DiffKind.DELETE,
+                      file=str(relative_path), diff=None)
         revision.diffs.append(change)
 
-    def enforce_commit(self, branch: Branch, system: System) -> None:
+    def enforce_commit(self, branch: CVSBranch) -> None:
         revisions = []
         for rev in branch.revisions:
             revisions.append(rev.id)
         source = {}
         for item in branch.source:
             source[item] = branch.source[item].id
-        if not system.arguments['no_disk_changes']:
-            with open('{}/{}.json'.format(system.branches, branch.name),
-                      'w', encoding='utf-8') as branch_file:
-                content = {
-                    'Name: ': branch.name,
-                    'Revisions: ': revisions,
-                    'Source: ': source
-                }
-                json.dump(content, branch_file, indent=4)
         new_revision = branch.revisions[-1]
-        diffs = []
-        for diff in new_revision.diffs:
-            diffs.append(diff.id)
-        if not system.arguments['no_disk_changes']:
-            with open('{}/{}.json'.format(system.revisions,
-                                          new_revision.id), 'w',
-                      encoding='utf-8') as rev_file:
-                content = {
-                    'ID: ': new_revision.id,
-                    'Date, time: ': str(new_revision.timestamp),
-                    'Message: ': new_revision.message,
-                    'Diffs: ': diffs
-                }
-                json.dump(content, rev_file, indent=4)
-        for diff in new_revision.diffs:
-            kind = self.get_kind_str(diff)
-            if not system.arguments['no_disk_changes']:
-                with open('{}/{}.json'.format(system.diffs,
-                                              diff.id), 'w',
-                          encoding='utf-8') as diff_file:
+        if len(new_revision.diffs) > 0:
+            if not self.arguments['no_disk_changes']:
+                with (self.system.branches / '{}.json'.format(branch.name))\
+                        .open('w', encoding='utf-8') as branch_file:
                     content = {
-                        'ID: ': diff.id,
-                        'Kind: ': kind,
-                        'File: ': diff.file,
-                        'Diff: ': diff.diff
+                        'Name: ': branch.name,
+                        'Revisions: ': revisions,
+                        'Source: ': source
                     }
-                    json.dump(content, diff_file, indent=4)
-            if not system.arguments['ignore_all'] and\
-                    not system.arguments['ignore_most']:
-                print('Version of {} was committed to branch {} '
-                      '(rev {}, diff {})'.format(diff.file, branch.name,
-                                                 new_revision.id, diff.id))
-            if not system.arguments['no_disk_changes'] and\
-                    not system.arguments['no_logging']:
-                self.update_log(system, branch, diff)
+                    json.dump(content, branch_file, indent=4)
+            diffs = []
+            for diff in new_revision.diffs:
+                diffs.append(diff.id)
+            if not self.arguments['no_disk_changes']:
+                with (self.system.revisions / '{}.json'
+                        .format(new_revision.id))\
+                        .open('w', encoding='utf-8') as rev_file:
+                    content = {
+                        'ID: ': new_revision.id,
+                        'Date, time: ': str(new_revision.timestamp),
+                        'Message: ': new_revision.message,
+                        'Diffs: ': diffs
+                    }
+                    json.dump(content, rev_file, indent=4)
+            for diff in new_revision.diffs:
+                kind = self.get_kind_str(diff)
+                if not self.arguments['no_disk_changes']:
+                    with (self.system.diffs / '{}.json'.format(diff.id))\
+                            .open('w', encoding='utf-8') as diff_file:
+                        content = {
+                            'ID: ': diff.id,
+                            'Kind: ': kind,
+                            'File: ': diff.file,
+                            'Diff: ': diff.diff
+                        }
+                        json.dump(content, diff_file, indent=4)
+                if not self.arguments['ignore_all'] and \
+                        not self.arguments['ignore_most']:
+                    logging.info('Version of {} was committed to branch {} '
+                                 '(rev {}, diff {})'.format(diff.file,
+                                                            branch.name,
+                                                            new_revision.id,
+                                                            diff.id))
+                if not self.arguments['no_disk_changes'] and\
+                        not self.arguments['no_logging']:
+                    self.update_log(branch, diff)
+            self.system.set_current_branch(self.arguments['branch'])
 
     @staticmethod
     def get_kind_str(diff: Diff) -> str:
@@ -187,7 +177,7 @@ class Commit(Command):
             return 'DELETE'
         return 'CHANGE'
 
-    def update_log(self, system: System, branch: Branch, diff: Diff) -> None:
+    def update_log(self, branch: CVSBranch, diff: Diff) -> None:
         json_message = {
             'Command: ': 'Commit',
             'Date, time: ': str(datetime.now()),
@@ -198,8 +188,4 @@ class Commit(Command):
                                  self.get_kind_str(diff)),
             'Message: ': branch.revisions[-1].message
         }
-        with open(system.history, encoding='utf-8') as history:
-            data = json.load(history)
-        data['Contents: '].append(json_message)
-        with open(system.history, 'w', encoding='utf-8') as history:
-            json.dump(data, history, indent=4)
+        self.put_message_into_log(json_message)

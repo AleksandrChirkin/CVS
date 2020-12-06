@@ -1,9 +1,11 @@
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import Any, Dict
-import json
+import logging
 import os
 import sys
+logging.basicConfig(format=u'%(message)s', level=logging.INFO,
+                    stream=sys.stdout)
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
 from cvs import CVSError, System, COMMANDS  # noqa
@@ -24,31 +26,21 @@ def parse_args() -> Dict[str, Any]:
                               help='Ignores some messages')
     subparsers = parser.add_subparsers(title='command')
     for command in COMMANDS:
-        command().set_parser(subparsers)
+        command(None).set_parser(subparsers)
     space = parser.parse_args().__dict__
     arguments = {}
     for argument in space:
-        if argument[0] != '_':
+        if not argument.startswith('__') and not argument.endswith('__'):
             arguments[argument] = space[argument]
+    if 'command' not in space.keys():
+        raise CVSError(System, 'No command entered')
     return arguments
 
 
 if __name__ == '__main__':
     try:
-        System(parse_args()).run()
-    except CVSError as err:
-        try:
-            print('FAILED: CVS Error occurred during execution')
-            error_log = Path('{}/.repos/errorlog.json'.format(Path.cwd()))
-            with open(error_log, encoding='utf-8') as log:
-                errors = json.load(log)
-            exc_message = {
-                'Class': err.command,
-                'Message': err.txt
-            }
-            errors['Errors List: '].append(exc_message)
-            with open(error_log, 'w', encoding='utf-8') as log:
-                json.dump(errors, log, indent=4)
-            print('You can investigate exception in error log in repository')
-        finally:
-            exit(1)
+        parsed_args = parse_args()
+        System(parsed_args['directory']).run(**parsed_args)
+    except Exception as err:
+        logging.error(err)
+        exit(1)

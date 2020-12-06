@@ -1,7 +1,7 @@
-from cvs import Branch, Command, Diff, Revision, System
+from cvs import CVSBranch, CVSError, Command, Diff, Revision
 from datetime import datetime
 from pathlib import Path
-import json
+import logging
 
 
 class Reset(Command):
@@ -10,9 +10,12 @@ class Reset(Command):
     If version and branch was not entered,
     the last committed version from master branch would be reset.
     """
-    def run(self, system: System) -> None:
-        for file in system.arguments['files']:
-            self.reset(system, Path('{}/{}'.format(system.directory, file)))
+    def run(self) -> None:
+        try:
+            for file in self.arguments['files']:
+                self.reset(self.system.directory / file)
+        except Exception as err:
+            raise CVSError(Reset, str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('reset')
@@ -22,71 +25,67 @@ class Reset(Command):
         parser.add_argument('-rev', '--revision', help='Revision number')
         parser.add_argument('files', nargs='+', help='File name')
 
-    def reset(self, system: System, file: Path) -> None:
-        branch = system.get_branch()
+    def reset(self, file: Path) -> None:
+        branch = self.get_branch()
+        relative_path = file.relative_to(self.system.directory)
         not_found_msg = '{} was not reset because his source' \
-                        ' was not found in repository'.format(file)
-        if file not in branch.source:
-            if not system.arguments['ignore_all']:
-                print(not_found_msg)
+                        ' was not found in repository'.format(relative_path)
+        if str(relative_path) not in branch.source.keys():
+            if not self.arguments['ignore_all']:
+                logging.warning(not_found_msg)
         last_diff = None
         for rev in branch.revisions:
-            if rev.id == system.arguments['revision']:
+            if rev.id == self.arguments['revision']:
                 for diff in rev.diffs:
-                    if diff.file == str(file):
-                        self.get_version(system, branch, diff, file)
+                    if diff.file == str(relative_path):
+                        self.get_version(branch, diff, file)
                         break
                 else:
-                    if not system.arguments['ignore_all']:
-                        print(not_found_msg)
+                    if not self.arguments['ignore_all']:
+                        logging.warning(not_found_msg)
                     return
                 break
             for diff in rev.diffs:
-                if diff.file == str(file):
+                if diff.file == str(relative_path):
                     last_diff = diff
         if last_diff is None:
-            if not system.arguments['ignore_all']:
-                print(not_found_msg)
+            if not self.arguments['ignore_all']:
+                logging.warning(not_found_msg)
             return
-        self.get_version(system, branch, last_diff, file)
+        self.get_version(branch, last_diff, file)
 
-    def get_version(self, system: System, branch: Branch,
-                    diff: Diff, file: Path) -> None:
-        source_rev = branch.source[str(file)]
-        file_diff = None
+    def get_version(self, branch: CVSBranch, diff: Diff, file: Path) -> None:
+        relative_path = file.relative_to(self.system.directory)
+        source_rev = branch.source[str(relative_path)]
         for rev_diff in source_rev.diffs:
-            if rev_diff.id == diff.id:
+            if rev_diff.file == diff.file:
                 file_diff = rev_diff
                 break
-        if file_diff is None:
-            if not system.arguments['ignore_all']:
-                print('')
+        else:
+            if not self.arguments['ignore_all']:
+                logging.warning('{} was not reset because his source'
+                                ' was not found in repository'
+                                .format(relative_path))
             return
         file_lines = file_diff.diff.split('\n')
         diff_lines = diff.diff.split('\n')
-        system.restore_file(file_lines, diff_lines)
-        if not system.arguments['ignore_all'] and\
-                not system.arguments['ignore_most']:
-            print('{} was reset from branch {}, rev {}'
-                  .format(file, branch.name, source_rev.id))
-        if not system.arguments['no_disk_changes']:
-            with open(file, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(file_lines))
-        elif not system.arguments['no_logging']:
-            self.update_log(system, source_rev, file)
+        self.restore_file(file_lines, diff_lines)
+        if not self.arguments['ignore_all'] and\
+                not self.arguments['ignore_most']:
+            logging.info('{} was reset from branch {}, rev {}'
+                         .format(relative_path, branch.name, source_rev.id))
+        if not self.arguments['no_disk_changes']:
+            with file.open('w', encoding='utf-8') as file_wrapper:
+                file_wrapper.write('\n'.join(file_lines))
+        elif not self.arguments['no_logging']:
+            self.update_log(source_rev, relative_path)
 
-    @staticmethod
-    def update_log(system: System, revision: Revision,
-                   file: Path) -> None:
+    def update_log(self, revision: Revision, file: Path) -> None:
         json_message = {
                 'Command: ': 'Reset',
                 'Date, time: ': str(datetime.now()),
                 'Comment: ': '{} was reset from branch {}, rev {}'
-                             .format(file, system.arguments['branch'],
+                             .format(file, self.arguments['branch'],
                                      revision.id)
         }
-        with open(system.history, 'r', encoding='utf-8') as history:
-            data = json.load(history)
-        data['Contents: '].append(json_message)
-        with open(system.history, 'w', encoding='utf-8') as history:
-            json.dump(data, history, indent=4)
+        self.put_message_into_log(json_message)
