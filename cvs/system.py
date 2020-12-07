@@ -15,10 +15,13 @@ class System:
         self.tagged = self.repository/'tagged'
         self.cvsignore = self.directory/'.cvsignore'
 
+    def does_repository_exist(self) -> bool:
+        return self.repository.exists()
+
     def run(self, **arguments) -> None:
         arguments['command'](self, **arguments).run()
 
-    def is_in_cvsignore(self, file: str) -> bool:
+    def is_in_cvsignore(self, file: Path) -> bool:
         if not self.cvsignore.exists():
             return False
         with self.cvsignore.open(encoding='utf-8') as cvsignore:
@@ -27,7 +30,7 @@ class System:
             glob = Path(self.directory).glob('**/'+ignored_item.strip())
             for glob_item in glob:
                 try:
-                    Path(file).relative_to(glob_item)
+                    file.relative_to(glob_item)
                 except ValueError:
                     continue
                 else:

@@ -1,5 +1,4 @@
 from cvs import CVSBranch, Command, CVSError, DiffKind
-from datetime import datetime
 from pathlib import Path
 import logging
 import os
@@ -13,12 +12,12 @@ class Checkout(Command):
         try:
             branch = self.get_branch()
             if len(branch.revisions) == 0:
-                raise CVSError(Checkout, 'Branch {} does not exist!'
-                               .format(branch.name))
-            for item in os.walk(self.system.directory):
-                for file in item[2]:
-                    file_path = Path(item[0])/file
-                    if not self.system.is_in_cvsignore(str(file_path)):
+                raise CVSError(Checkout,
+                               f'Branch {branch.name} does not exist!')
+            for directory, _, files in os.walk(self.system.directory):
+                for file in files:
+                    file_path = Path(directory)/file
+                    if not self.system.is_in_cvsignore(file_path):
                         self.checkout(branch, file_path)
             self.system.set_current_branch(self.arguments['branch'])
 
@@ -32,8 +31,8 @@ class Checkout(Command):
 
     def checkout(self, branch: CVSBranch, file: Path) -> None:
         relative_path = file.relative_to(self.system.directory)
-        not_found_msg = '{} was not found in branch {}'\
-            .format(relative_path, branch.name)
+        not_found_msg = f'{relative_path} was not found' \
+                        f' in branch {branch.name}'
         if str(relative_path) not in branch.source.keys():
             logging.warning(not_found_msg)
             return
@@ -50,7 +49,8 @@ class Checkout(Command):
             if not self.arguments['no_disk_changes']:
                 with Path(file).open('w', encoding='utf-8') as file_writer:
                     file_writer.write(last_version.diff)
-            self.make_output(branch, file)
+            logging.info(f'{relative_path} was checked out '
+                         f'from branch {branch.name}')
         else:
             for source_diff in branch.source[str(relative_path)].diffs:
                 if source_diff.file == str(relative_path):
@@ -62,20 +62,5 @@ class Checkout(Command):
             self.restore_file(file_lines, diff_lines)
             with file.open('w', encoding='utf-8') as file_writer:
                 file_writer.write('\n'.join(file_lines))
-            self.make_output(branch, file)
-
-    def make_output(self, branch: CVSBranch, file: Path):
-        if not self.arguments['ignore_all'] and \
-                not self.arguments['ignore_most']:
-            logging.info('{} was checked out from branch {}'
-                         .format(file.relative_to(self.system.directory),
-                                 branch.name))
-        if not self.arguments['no_logging'] and \
-                not self.arguments['no_disk_changes']:
-            json_message = {
-                'Command: ': 'Checkout',
-                'Date, time: ': str(datetime.now()),
-                'Comment: ': '{} was checked out from branch {}'
-                             .format(file, branch.name),
-            }
-            self.put_message_into_log(json_message)
+            logging.info(f'{relative_path} was checked out'
+                         f' from branch {branch.name}')

@@ -1,5 +1,4 @@
-from cvs import CVSBranch, CVSError, Command, Diff, Revision
-from datetime import datetime
+from cvs import CVSBranch, CVSError, Command, Diff
 from pathlib import Path
 import logging
 
@@ -28,11 +27,10 @@ class Reset(Command):
     def reset(self, file: Path) -> None:
         branch = self.get_branch()
         relative_path = file.relative_to(self.system.directory)
-        not_found_msg = '{} was not reset because his source' \
-                        ' was not found in repository'.format(relative_path)
+        not_found_msg = f'{relative_path} was not reset because his source' \
+                        f' was not found in repository'
         if str(relative_path) not in branch.source.keys():
-            if not self.arguments['ignore_all']:
-                logging.warning(not_found_msg)
+            raise CVSError(Reset, not_found_msg)
         last_diff = None
         for rev in branch.revisions:
             if rev.id == self.arguments['revision']:
@@ -41,17 +39,13 @@ class Reset(Command):
                         self.get_version(branch, diff, file)
                         break
                 else:
-                    if not self.arguments['ignore_all']:
-                        logging.warning(not_found_msg)
-                    return
+                    raise CVSError(Reset, not_found_msg)
                 break
             for diff in rev.diffs:
                 if diff.file == str(relative_path):
                     last_diff = diff
         if last_diff is None:
-            if not self.arguments['ignore_all']:
-                logging.warning(not_found_msg)
-            return
+            raise CVSError(Reset, not_found_msg)
         self.get_version(branch, last_diff, file)
 
     def get_version(self, branch: CVSBranch, diff: Diff, file: Path) -> None:
@@ -62,30 +56,14 @@ class Reset(Command):
                 file_diff = rev_diff
                 break
         else:
-            if not self.arguments['ignore_all']:
-                logging.warning('{} was not reset because his source'
-                                ' was not found in repository'
-                                .format(relative_path))
+            logging.warning(f'{relative_path} was not reset because his source'
+                            ' was not found in repository')
             return
         file_lines = file_diff.diff.split('\n')
         diff_lines = diff.diff.split('\n')
         self.restore_file(file_lines, diff_lines)
-        if not self.arguments['ignore_all'] and\
-                not self.arguments['ignore_most']:
-            logging.info('{} was reset from branch {}, rev {}'
-                         .format(relative_path, branch.name, source_rev.id))
+        logging.info(f'{relative_path} was reset from branch {branch.name},'
+                     f' rev {source_rev.id}')
         if not self.arguments['no_disk_changes']:
             with file.open('w', encoding='utf-8') as file_wrapper:
                 file_wrapper.write('\n'.join(file_lines))
-            if not self.arguments['no_logging']:
-                self.update_log(source_rev, relative_path)
-
-    def update_log(self, revision: Revision, file: Path) -> None:
-        json_message = {
-                'Command: ': 'Reset',
-                'Date, time: ': str(datetime.now()),
-                'Comment: ': '{} was reset from branch {}, rev {}'
-                             .format(file, self.arguments['branch'],
-                                     revision.id)
-        }
-        self.put_message_into_log(json_message)

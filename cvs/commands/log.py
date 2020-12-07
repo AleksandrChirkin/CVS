@@ -3,7 +3,6 @@ from datetime import date, datetime
 from typing import Tuple
 import json
 import logging
-import os
 
 
 class Log(Command):
@@ -14,37 +13,22 @@ class Log(Command):
         try:
             with self.system.history.open(encoding='utf-8') as history:
                 log = json.load(history)
-            for item in log["Contents: "]:
+            for item in log:
                 if self.arguments['branches'] is not None:
                     for branch in self.arguments['branches']:
-                        if '{}.json'.format(branch) not\
-                                in next(os.walk(self.system.branches))[2]:
-                            raise CVSError(Log,
-                                           'Branch {} does not exist!'
-                                           .format(branch))
-                        if branch in item["Comment: "]:
+                        if branch == item['Branch']:
                             break
                     else:
                         continue
                 if self.arguments['dates'] is not None and\
-                        not self.is_date_in_interval(item["Date, time: "]
+                        not self.is_date_in_interval(item["Date, time"]
                                                      [0:10],
-                                                     self.arguments['dates']):
+                                                     self.arguments
+                                                     ['dates']):
                     continue
-                if self.arguments['files'] is not None:
-                    for file in self.arguments['files']:
-                        if file in item["Comment: "]:
-                            break
-                    else:
-                        continue
                 if self.arguments['revisions'] is not None:
                     for revision in self.arguments['revisions']:
-                        if '{}.json'.format(revision) not\
-                                in next(os.walk(self.system.revisions))[2]:
-                            raise CVSError(Log,
-                                           'Revision {} does not exist!'
-                                           .format(revision))
-                        if revision in item["Comment: "]:
+                        if revision == item['Revision']:
                             break
                     else:
                         continue
@@ -58,7 +42,6 @@ class Log(Command):
         parser.add_argument('-branches', nargs='+',
                             help='Branch names')
         parser.add_argument('-dates', help='Time interval')
-        parser.add_argument('-files', nargs='+', help='Files names')
         parser.add_argument('-revisions', nargs='+',
                             help='Revisions numbers')
 

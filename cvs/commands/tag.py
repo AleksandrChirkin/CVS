@@ -1,5 +1,4 @@
 from cvs import Command, CVSError
-from datetime import datetime
 from pathlib import Path
 import logging
 import os
@@ -17,22 +16,18 @@ class Tag(Command):
                     with (self.system.tags/tag).open() as tag_file:
                         logging.info(tag_file)
             elif Path.exists(Path(name)):
-                raise CVSError(Tag, '{} tag had already been created'
-                                    .format(name))
+                raise CVSError(Tag, f'{name} tag had already been created')
             else:
                 revision = self.arguments['revision']
                 if revision is None:
                     revision = next(os.walk(self.system.revisions))[2][-1]
                 elif not Path.exists(self.system.revisions/revision):
-                    raise CVSError(Tag, 'Revision {} does not exist!'
-                                        .format(revision))
-                with (self.system.tags/name).open('w',
-                                                  encoding='utf-8') \
-                        as tag_file:
-                    tag_file.write('{} {} {}'.format(name, revision,
-                                                     self.arguments
-                                                     ['message']))
-                self.update_log()
+                    raise CVSError(Tag, f'Revision {revision} does not exist!')
+                if not self.arguments['no_disk_changes']:
+                    with (self.system.tags/name).open('w', encoding='utf-8') \
+                            as tag_file:
+                        message = self.arguments['message']
+                        tag_file.write(f'{name} {revision} {message}')
         except Exception as err:
             raise CVSError(Tag, str(err))
 
@@ -42,14 +37,3 @@ class Tag(Command):
         parser.add_argument('-m', '--message', help='Tag message')
         parser.add_argument('-rev', '--revision', help='Revision number')
         parser.add_argument('-name', help='Tag name')
-
-    def update_log(self) -> None:
-        json_message = {
-            'Command: ': 'Tag',
-            'Date, time: ': str(datetime.now()),
-            'Comment: ': '{} tag was added to rev {}'
-                         .format(self.arguments['name'],
-                                 self.arguments['revision']),
-            'Message': self.arguments['message']
-        }
-        self.put_message_into_log(json_message)

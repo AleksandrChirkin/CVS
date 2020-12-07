@@ -36,7 +36,6 @@ class TestCommands(unittest.TestCase):
                    recreate=False)
         self.assertTrue(system.repository.exists())
         self.assertTrue(system.cvsignore.exists())
-        self.assertTrue(system.history.exists())
         self.assertTrue(system.branches.exists())
         self.assertTrue(system.diffs.exists())
         self.assertTrue(system.revisions.exists())
@@ -50,14 +49,14 @@ class TestCommands(unittest.TestCase):
         for item in os.walk(Path.cwd() / 'cvs'):
             for file in item[2]:
                 full_path = Path(item[0]) / file
-                if not system.is_in_cvsignore(str(full_path)):
+                if not system.is_in_cvsignore(full_path):
                     relative_path = str(full_path.relative_to(Path.cwd()))
                     self.assertIn(relative_path, added.keys())
                     self.assertTrue((system.tagged / added[relative_path])
                                     .exists())
 
     def test_first_commit(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         self.assertEqual(len(next(os.walk(system.branches))[2]), 1)
         self.assertTrue((system.branches / 'master.json').exists())
         self.assertEqual(len(next(os.walk(system.revisions))[2]), 1)
@@ -65,9 +64,10 @@ class TestCommands(unittest.TestCase):
         self.assertFalse(system.tagged.exists())
 
     def test_new_commit_to_existing_branch(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         with Path('tests/test_file.txt').open('a', encoding='utf-8') as readme:
             readme.write(' ')
+        tests.add_files()
         system.run(no_logging=False, no_disk_changes=False,
                    ignore_all=False, ignore_most=False,
                    command=Commit, branch='master',
@@ -78,17 +78,18 @@ class TestCommands(unittest.TestCase):
         self.assertFalse(system.tagged.exists())
 
     def test_committing_new_file(self) -> None:
-        tests.make_first_commit()
+        tests.make_commit()
         with Path('tests/test_file2.txt') \
                 .open('w', encoding='utf-8') as test_file:
             test_file.write('I\'m temp file!')
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         self.assertEqual(len(next(os.walk(system.revisions))[2]), 2)
         self.assertFalse(system.add_list.exists())
         self.assertFalse(system.tagged.exists())
 
     def test_commit_to_new_branch(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
+        tests.add_files()
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Commit, branch='test',
                    message='Creating test branch')
@@ -99,11 +100,12 @@ class TestCommands(unittest.TestCase):
         self.assertFalse(system.tagged.exists())
 
     def test_reset(self) -> None:
-        system = tests.make_first_commit()
+        tests.make_commit()
         with Path('tests/test_file.txt') \
                 .open('r+', encoding='utf-8') as readme:
             readme_content = ''.join(readme.readlines())
             readme.write(' ')
+        system = tests.make_commit()
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Reset, branch='master',
                    files=['tests/test_file.txt'],
@@ -112,7 +114,7 @@ class TestCommands(unittest.TestCase):
             self.assertEqual(''.join(readme.readlines()), readme_content)
 
     def test_log(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Log, branches=['master'],
                    dates=str(date.today()), files=['README.md'],
@@ -120,7 +122,7 @@ class TestCommands(unittest.TestCase):
                               [2][-1][:-5]])
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Log, branches=['master'],
-                   dates='{0}>{0}'.format(date.today()),
+                   dates=f'{date.today()}>{date.today()}',
                    files=['README.md'],
                    revisions=[next(os.walk(Path.cwd() /
                                            '.repos/revisions'))
@@ -129,7 +131,7 @@ class TestCommands(unittest.TestCase):
         self.assertIsNone(exc_type)
 
     def test_log_with_defaults(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         system.run(no_logging=False, no_disk_changes=False,
                    ignore_all=False, ignore_most=False,
                    command=Log, branches=None, dates=None,
@@ -138,7 +140,7 @@ class TestCommands(unittest.TestCase):
         self.assertIsNone(exc_type)
 
     def test_checkout(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         with Path('tests/test_file.txt') \
                 .open('r+', encoding='utf-8') as test_file:
             test_content = ''.join(test_file.readlines())
@@ -149,7 +151,7 @@ class TestCommands(unittest.TestCase):
             self.assertEqual(''.join(test_file.readlines()), test_content)
 
     def test_tag(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Tag, name='TEST',
                    revision=None, message='A test tag')
@@ -157,18 +159,19 @@ class TestCommands(unittest.TestCase):
         self.assertEqual(len(tags), 1)
         self.assertEqual(tags[0], 'TEST')
         with (system.tags / 'TEST').open() as test_tag:
-            self.assertEqual(test_tag.readline(), 'TEST {} A test tag'
-                             .format(next(os.walk(system.revisions))[2][-1]))
+            self.assertEqual(test_tag.readline(),
+                             f'TEST {next(os.walk(system.revisions))[2][-1]}'
+                             f' A test tag')
 
     def test_branch(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Branch)
         exc_type, value, traceback = sys.exc_info()
         self.assertIsNone(exc_type)
 
     def test_status(self) -> None:
-        system = tests.make_first_commit()
+        system = tests.make_commit()
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Status, branch='master')
         exc_type, value, traceback = sys.exc_info()

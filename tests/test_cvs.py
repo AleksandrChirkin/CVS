@@ -21,13 +21,13 @@ class TestCVS(unittest.TestCase):
             command(self.system).set_parser(subparsers)
 
     def test_is_in_cvsignore(self) -> None:
-        self.assertTrue(self.system.is_in_cvsignore(str(Path.cwd() /
-                                                    'cvs/__pycache__')))
+        self.assertTrue(self.system.is_in_cvsignore(Path.cwd() /
+                                                    'cvs/__pycache__'))
         self.assertFalse(self.system.is_in_cvsignore
-                         (str(Path.cwd()/'tests/test_cvs.py')))
+                         (Path.cwd()/'tests/test_cvs.py'))
 
     def test_get_current_branch(self) -> None:
-        tests.make_first_commit()
+        tests.make_commit()
         self.assertEqual(self.system.get_current_branch(), 'master')
 
 

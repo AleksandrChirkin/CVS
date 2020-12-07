@@ -2,7 +2,7 @@ from abc import abstractmethod
 from cvs import CVSBranch, CVSError, Diff, DiffKind, Revision, System
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 import difflib
 import json
 import uuid
@@ -22,16 +22,16 @@ class Command:
         raise NotImplementedError
 
     def get_branch(self) -> CVSBranch:
-        branch_path = self.system.branches /\
-                      ('{}.json'.format(self.arguments['branch']))
+        branch_name = self.arguments['branch']
+        branch_path = self.system.branches / f'{branch_name}.json'
         branch = CVSBranch(name=self.arguments['branch'], revisions=[],
                            source={})
         if Path.exists(branch_path):
             with branch_path.open(encoding='utf-8') as branch_file:
                 branch_info = json.load(branch_file)
-                for rev in branch_info['Revisions: ']:
+                for rev in branch_info['Revisions']:
                     branch.revisions.append(self.get_revision(rev))
-                source = branch_info['Source: ']
+                source = branch_info['Source']
                 for item in source:
                     for revision in branch.revisions:
                         if source[item] == revision.id:
@@ -39,34 +39,34 @@ class Command:
         return branch
 
     def get_revision(self, name: str) -> Revision:
-        revision_path = Path('{}/{}.json'.format(self.system.revisions, name))
+        revision_path = self.system.revisions/f'{name}.json'
         revision = Revision(diffs=[], message='', id=uuid.uuid4().hex,
                             timestamp=datetime.now())
         with revision_path.open(encoding='utf-8') as rev_file:
             revision_info = json.load(rev_file)
-            revision.message = revision_info['Message: ']
-            revision.id = revision_info['ID: ']
-            revision.timestamp = revision_info['Date, time: ']
-            for item in revision_info['Diffs: ']:
+            revision.message = revision_info['Message']
+            revision.id = revision_info['ID']
+            revision.timestamp = revision_info['Date, time']
+            for item in revision_info['Diffs']:
                 revision.diffs.append(self.get_diff(item))
         return revision
 
     def get_diff(self, name: str) -> Diff:
-        diff_path = Path('{}/{}.json'.format(self.system.diffs, name))
+        diff_path = self.system.diffs/f'{name}.json'
         with diff_path.open(encoding='utf-8') as diff_file:
             diff_info = json.load(diff_file)
-            return Diff(id=diff_info['ID: '],
+            return Diff(id=diff_info['ID'],
                         kind=self.get_diff_kind(diff_info),
-                        file=diff_info['File: '],
-                        diff=diff_info['Diff: '])
+                        file=diff_info['File'],
+                        diff=diff_info['Diff'])
 
     @staticmethod
     def get_diff_kind(diff_info: dict) -> DiffKind:
-        if diff_info['Kind: '] == 'ADD':
+        if diff_info['Kind'] == 'ADD':
             return DiffKind.ADD
-        if diff_info['Kind: '] == 'CHANGE':
+        if diff_info['Kind'] == 'CHANGE':
             return DiffKind.CHANGE
-        if diff_info['Kind: '] == 'DELETE':
+        if diff_info['Kind'] == 'DELETE':
             return DiffKind.DELETE
 
     def is_file_modified(self, branch: CVSBranch, file: Path) -> bool:
@@ -107,7 +107,7 @@ class Command:
                 last_diff = diff
                 break
         else:
-            raise CVSError(System, 'No source to file {} found'.format(file))
+            raise CVSError(System, f'No source to file {file} found')
         return last_diff
 
     @staticmethod
@@ -125,10 +125,3 @@ class Command:
                 files_margin += 1
             elif diff_lines[i][0] == '?':
                 files_margin += 1
-
-    def put_message_into_log(self, json_message: Dict[str, Any]):
-        with self.system.history.open(encoding='utf-8') as history:
-            data = json.load(history)
-        data['Contents: '].append(json_message)
-        with self.system.history.open('w', encoding='utf-8') as history:
-            json.dump(data, history, indent=4)
