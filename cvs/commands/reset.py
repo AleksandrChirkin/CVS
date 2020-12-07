@@ -77,8 +77,8 @@ class Reset(Command):
         if not self.arguments['no_disk_changes']:
             with file.open('w', encoding='utf-8') as file_wrapper:
                 file_wrapper.write('\n'.join(file_lines))
-        elif not self.arguments['no_logging']:
-            self.update_log(source_rev, relative_path)
+            if not self.arguments['no_logging']:
+                self.update_log(source_rev, relative_path)
 
     def update_log(self, revision: Revision, file: Path) -> None:
         json_message = {
