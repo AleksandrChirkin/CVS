@@ -8,7 +8,7 @@ class Status(Command):
     """
     Shows the current status of repository
     """
-    def run(self):
+    def run(self) -> None:
         branch = self.get_branch()
         logging.info('Current branch: {}'.format(branch.name))
         for item in os.walk(self.system.directory):

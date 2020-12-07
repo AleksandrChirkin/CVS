@@ -115,7 +115,7 @@ class Command:
         files_margin = 0
         for i in range(len(diff_lines)):
             if len(diff_lines[i]) == 0:
-                if diff_lines[i-1][0] == '?':
+                if len(diff_lines[i-1]) > 0 and diff_lines[i-1][0] == '?':
                     files_margin += 1
                 continue
             if diff_lines[i][0] == '+':

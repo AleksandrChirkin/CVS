@@ -77,7 +77,7 @@ class TestCommands(unittest.TestCase):
         self.assertFalse(system.add_list.exists())
         self.assertFalse(system.tagged.exists())
 
-    def test_committing_new_file(self):
+    def test_committing_new_file(self) -> None:
         tests.make_first_commit()
         with Path('tests/test_file2.txt') \
                 .open('w', encoding='utf-8') as test_file:
@@ -160,14 +160,14 @@ class TestCommands(unittest.TestCase):
             self.assertEqual(test_tag.readline(), 'TEST {} A test tag'
                              .format(next(os.walk(system.revisions))[2][-1]))
 
-    def test_branch(self):
+    def test_branch(self) -> None:
         system = tests.make_first_commit()
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Branch)
         exc_type, value, traceback = sys.exc_info()
         self.assertIsNone(exc_type)
 
-    def test_status(self):
+    def test_status(self) -> None:
         system = tests.make_first_commit()
         system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
                    ignore_most=False, command=Status, branch='master')

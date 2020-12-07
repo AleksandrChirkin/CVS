@@ -7,7 +7,7 @@ class Branch(Command):
     """
     Returns list of all existing branches
     """
-    def run(self):
+    def run(self) -> None:
         try:
             current_branch = self.system.get_current_branch()
             for branch in self.system.branches.iterdir():
