@@ -18,7 +18,8 @@ class Checkout(Command):
                     file_path = Path(directory)/file
                     if not self.system.is_in_cvsignore(file_path):
                         self.checkout(branch, file_path)
-            self.system.set_current_branch(branch.name)
+            if not self.arguments['no_disk_changes']:
+                self.system.set_current_branch(branch.name)
         except Exception as err:
             raise CVSError(str(err))
 
@@ -58,7 +59,8 @@ class Checkout(Command):
                 raise CVSError(not_found_msg)
             diff_lines = last_version.diff.split('\n')
             self.restore_file(file_lines, diff_lines)
-            with file.open('w', encoding='utf-8') as file_writer:
-                file_writer.write('\n'.join(file_lines))
+            if not self.arguments['no_disk_changes']:
+                with file.open('w', encoding='utf-8') as file_writer:
+                    file_writer.write('\n'.join(file_lines))
             logging.info(f'{relative_path} was checked out'
                          f' from branch {branch.name}')

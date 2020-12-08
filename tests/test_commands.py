@@ -14,8 +14,7 @@ from cvs import Init, Commit, Reset, Log, Checkout, Tag, Branch, Status,\
 
 class TestCommands(unittest.TestCase):
     def setUp(self) -> None:
-        System(Path.cwd()).run(no_logging=False, no_disk_changes=False,
-                               ignore_all=False, ignore_most=False,
+        System(Path.cwd()).run(no_disk_changes=False,
                                command=Init,
                                recreate=(Path.cwd() / '.repos').exists())
         with Path('tests/test_file.txt') \
@@ -31,9 +30,7 @@ class TestCommands(unittest.TestCase):
         os.remove(Path.cwd() / '.cvsignore')
         os.rmdir(Path.cwd() / '.repos')
         system = System(Path.cwd())
-        system.run(no_logging=False, no_disk_changes=False,
-                   ignore_all=False, ignore_most=False, command=Init,
-                   recreate=False)
+        system.run(no_disk_changes=False, command=Init, recreate=False)
         self.assertTrue(system.repository.exists())
         self.assertTrue(system.cvsignore.exists())
         self.assertTrue(system.branches.exists())
@@ -68,9 +65,7 @@ class TestCommands(unittest.TestCase):
         with Path('tests/test_file.txt').open('a', encoding='utf-8') as readme:
             readme.write(' ')
         tests.add_files()
-        system.run(no_logging=False, no_disk_changes=False,
-                   ignore_all=False, ignore_most=False,
-                   command=Commit, branch='master',
+        system.run(no_disk_changes=False, command=Commit, branch='master',
                    message='Committing README')
         self.assertEqual(len(next(os.walk(system.branches))[2]), 1)
         self.assertEqual(len(next(os.walk(system.revisions))[2]), 2)
@@ -90,8 +85,7 @@ class TestCommands(unittest.TestCase):
     def test_commit_to_new_branch(self) -> None:
         system = tests.make_commit()
         tests.add_files()
-        system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
-                   ignore_most=False, command=Commit, branch='test',
+        system.run(no_disk_changes=False, command=Commit, branch='test',
                    message='Creating test branch')
         self.assertEqual(len(next(os.walk(system.branches))[2]), 2)
         self.assertTrue((system.branches / 'test.json').exists())
@@ -106,8 +100,7 @@ class TestCommands(unittest.TestCase):
             readme_content = ''.join(readme.readlines())
             readme.write(' ')
         system = tests.make_commit()
-        system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
-                   ignore_most=False, command=Reset, branch='master',
+        system.run(no_disk_changes=False, command=Reset, branch='master',
                    files=['tests/test_file.txt'],
                    revision=next(os.walk(system.revisions))[2][-1][:-5])
         with Path('tests/test_file.txt').open(encoding='utf-8') as readme:
@@ -115,15 +108,12 @@ class TestCommands(unittest.TestCase):
 
     def test_log(self) -> None:
         system = tests.make_commit()
-        system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
-                   ignore_most=False, command=Log, branches=['master'],
+        system.run(command=Log, branches=['master'],
                    dates=str(date.today()), files=['README.md'],
                    revisions=[next(os.walk(Path.cwd() / '.repos/revisions'))
                               [2][-1][:-5]])
-        system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
-                   ignore_most=False, command=Log, branches=['master'],
+        system.run(command=Log, branches=['master'],
                    dates=f'{date.today()}>{date.today()}',
-                   files=['README.md'],
                    revisions=[next(os.walk(Path.cwd() /
                                            '.repos/revisions'))
                               [2][-1]])
@@ -132,10 +122,7 @@ class TestCommands(unittest.TestCase):
 
     def test_log_with_defaults(self) -> None:
         system = tests.make_commit()
-        system.run(no_logging=False, no_disk_changes=False,
-                   ignore_all=False, ignore_most=False,
-                   command=Log, branches=None, dates=None,
-                   files=None, revisions=None)
+        system.run(command=Log, branches=None, dates=None, revisions=None)
         exc_type, value, traceback = sys.exc_info()
         self.assertIsNone(exc_type)
 
@@ -145,15 +132,13 @@ class TestCommands(unittest.TestCase):
                 .open('r+', encoding='utf-8') as test_file:
             test_content = ''.join(test_file.readlines())
             test_file.write(' ')
-        system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
-                   ignore_most=False, command=Checkout, branch='master')
+        system.run(no_disk_changes=False, command=Checkout, branch='master')
         with Path('tests/test_file.txt').open(encoding='utf-8') as test_file:
             self.assertEqual(''.join(test_file.readlines()), test_content)
 
     def test_tag(self) -> None:
         system = tests.make_commit()
-        system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
-                   ignore_most=False, command=Tag, name='TEST',
+        system.run(no_disk_changes=False, command=Tag, name='TEST',
                    revision=None, message='A test tag')
         tags = next(os.walk(system.tags))[2]
         self.assertEqual(len(tags), 1)
@@ -165,15 +150,16 @@ class TestCommands(unittest.TestCase):
 
     def test_branch(self) -> None:
         system = tests.make_commit()
-        system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
-                   ignore_most=False, command=Branch)
+        system.run(command=Branch)
         exc_type, value, traceback = sys.exc_info()
         self.assertIsNone(exc_type)
 
     def test_status(self) -> None:
         system = tests.make_commit()
-        system.run(no_logging=False, no_disk_changes=False, ignore_all=False,
-                   ignore_most=False, command=Status, branch='master')
+        with Path('tests/test_file.txt') \
+                .open('r+', encoding='utf-8') as test_file:
+            test_file.write(' ')
+        system.run(command=Status, branch='master')
         exc_type, value, traceback = sys.exc_info()
         self.assertIsNone(exc_type)
 

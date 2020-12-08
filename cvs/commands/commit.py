@@ -138,7 +138,7 @@ class Commit(Command):
                              f'(rev {new_revision.id}, diff {diff.id})')
             if not self.arguments['no_disk_changes']:
                 self.update_log(branch)
-            self.system.set_current_branch(self.arguments['branch'])
+                self.system.set_current_branch(self.arguments['branch'])
 
     @staticmethod
     def get_kind_str(diff: Diff) -> str:

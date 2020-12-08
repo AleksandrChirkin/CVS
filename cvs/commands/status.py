@@ -15,7 +15,8 @@ class Status(Command):
             for item in os.walk(self.system.directory):
                 for file in item[2]:
                     full_path = Path(item[0]) / file
-                    relative_path = full_path.relative_to(self.system.directory)
+                    relative_path = full_path\
+                        .relative_to(self.system.directory)
                     if str(relative_path) not in branch.source.keys():
                         if not self.system.is_in_cvsignore(full_path):
                             logging.info(f'New file: {relative_path}')

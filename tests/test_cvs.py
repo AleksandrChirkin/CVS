@@ -12,8 +12,7 @@ from cvs import Command, Init, System, COMMANDS  # noqa
 class TestCVS(unittest.TestCase):
     def setUp(self) -> None:
         self.system = System(Path.cwd())
-        self.system.run(no_logging=False, no_disk_changes=False,
-                        ignore_all=False, ignore_most=False, command=Init,
+        self.system.run(no_disk_changes=False, command=Init,
                         recreate=Path.exists(Path.cwd() / '.repos'))
         parser = ArgumentParser()
         subparsers = parser.add_subparsers()
