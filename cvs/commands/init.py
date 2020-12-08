@@ -17,7 +17,7 @@ class Init(Command):
             else:
                 self.create_repository()
         except Exception as err:
-            raise CVSError(Init, str(err))
+            raise CVSError(str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('init')
@@ -27,7 +27,7 @@ class Init(Command):
 
     def recreate_repository(self) -> None:
         if not Path(self.system.repository).exists():
-            raise CVSError(Init, "Repository does not exist! "
+            raise CVSError("Repository does not exist! "
                            "To create a repository, use 'init' command")
         for rep_name, subdirs, files in os.walk(self.system.repository,
                                                 False):

@@ -107,7 +107,7 @@ class Command:
                 last_diff = diff
                 break
         else:
-            raise CVSError(System, f'No source to file {file} found')
+            raise CVSError(f'No source to file {file} found')
         return last_diff
 
     @staticmethod

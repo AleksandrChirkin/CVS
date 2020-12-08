@@ -34,7 +34,7 @@ class Log(Command):
                         continue
                 logging.info(' '.join(item.values()))
         except Exception as err:
-            raise CVSError(Log, str(err))
+            raise CVSError(str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('log')
@@ -64,7 +64,7 @@ class Log(Command):
                 time_span = self.date_span(interval, '>')
                 return time_span[0] > date_item > time_span[1]
         except ValueError:
-            raise CVSError(Log, 'Incorrect date or date range format')
+            raise CVSError('Incorrect date or date range format')
 
     @staticmethod
     def date_span(interval: str, separator: str) -> Tuple[date, date]:

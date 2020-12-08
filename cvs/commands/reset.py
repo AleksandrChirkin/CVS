@@ -14,7 +14,7 @@ class Reset(Command):
             for file in self.arguments['files']:
                 self.reset(self.system.directory / file)
         except Exception as err:
-            raise CVSError(Reset, str(err))
+            raise CVSError(str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('reset')
@@ -25,12 +25,14 @@ class Reset(Command):
         parser.add_argument('files', nargs='+', help='File name')
 
     def reset(self, file: Path) -> None:
-        branch = self.get_branch()
         relative_path = file.relative_to(self.system.directory)
+        if file.is_dir():
+            raise CVSError(f'{relative_path} is a directory!')
+        branch = self.get_branch()
         not_found_msg = f'{relative_path} was not reset because his source' \
                         f' was not found in repository'
         if str(relative_path) not in branch.source.keys():
-            raise CVSError(Reset, not_found_msg)
+            raise CVSError(not_found_msg)
         last_diff = None
         for rev in branch.revisions:
             if rev.id == self.arguments['revision']:
@@ -39,13 +41,13 @@ class Reset(Command):
                         self.get_version(branch, diff, file)
                         break
                 else:
-                    raise CVSError(Reset, not_found_msg)
+                    raise CVSError(not_found_msg)
                 break
             for diff in rev.diffs:
                 if diff.file == str(relative_path):
                     last_diff = diff
         if last_diff is None:
-            raise CVSError(Reset, not_found_msg)
+            raise CVSError(not_found_msg)
         self.get_version(branch, last_diff, file)
 
     def get_version(self, branch: CVSBranch, diff: Diff, file: Path) -> None:

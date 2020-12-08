@@ -16,20 +16,20 @@ class Tag(Command):
                     with (self.system.tags/tag).open() as tag_file:
                         logging.info(tag_file)
             elif Path.exists(Path(name)):
-                raise CVSError(Tag, f'{name} tag had already been created')
+                raise CVSError(f'{name} tag had already been created')
             else:
                 revision = self.arguments['revision']
                 if revision is None:
                     revision = next(os.walk(self.system.revisions))[2][-1]
                 elif not Path.exists(self.system.revisions/revision):
-                    raise CVSError(Tag, f'Revision {revision} does not exist!')
+                    raise CVSError(f'Revision {revision} does not exist!')
                 if not self.arguments['no_disk_changes']:
                     with (self.system.tags/name).open('w', encoding='utf-8') \
                             as tag_file:
                         message = self.arguments['message']
                         tag_file.write(f'{name} {revision} {message}')
         except Exception as err:
-            raise CVSError(Tag, str(err))
+            raise CVSError(str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('tag')

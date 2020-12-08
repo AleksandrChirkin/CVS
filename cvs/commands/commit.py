@@ -15,7 +15,7 @@ class Commit(Command):
     def run(self) -> None:
         try:
             if not self.system.add_list.exists():
-                raise CVSError(Commit, "Add list does not exist!")
+                raise CVSError("Add list does not exist!")
             branch = self.get_branch()
             revision = Revision(message=self.arguments['message'],
                                 diffs=[], id=uuid.uuid4().hex,
@@ -44,7 +44,7 @@ class Commit(Command):
                 logging.info(f'{len(last_rev.diffs)} files were committed '
                              f'to branch {branch.name} (rev {last_rev.id})')
         except Exception as err:
-            raise CVSError(Commit, str(err))
+            raise CVSError(str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('commit')

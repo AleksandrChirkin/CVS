@@ -17,7 +17,7 @@ class Branch(Command):
                     message += '(HEAD)'
                 logging.info(message)
         except Exception as err:
-            raise CVSError(Branch, str(err))
+            raise CVSError(str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('branch')

@@ -17,7 +17,7 @@ class Add(Command):
             for file in self.arguments['files']:
                 path = self.system.directory/file
                 if not path.exists():
-                    raise CVSError(Add, f'{path} does not exist!')
+                    raise CVSError(f'{file} does not exist!')
                 elif path.is_dir():
                     for directory, _, items in os.walk(path):
                         for item in items:
@@ -25,7 +25,7 @@ class Add(Command):
                 else:
                     self.add(path)
         except Exception as err:
-            raise CVSError(Add, str(err))
+            raise CVSError(str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('add')

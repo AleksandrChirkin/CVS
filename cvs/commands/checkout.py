@@ -12,17 +12,15 @@ class Checkout(Command):
         try:
             branch = self.get_branch()
             if len(branch.revisions) == 0:
-                raise CVSError(Checkout,
-                               f'Branch {branch.name} does not exist!')
+                raise CVSError(f'Branch {branch.name} does not exist!')
             for directory, _, files in os.walk(self.system.directory):
                 for file in files:
                     file_path = Path(directory)/file
                     if not self.system.is_in_cvsignore(file_path):
                         self.checkout(branch, file_path)
-            self.system.set_current_branch(self.arguments['branch'])
-
+            self.system.set_current_branch(branch.name)
         except Exception as err:
-            raise CVSError(Checkout, str(err))
+            raise CVSError(str(err))
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('checkout')
@@ -57,7 +55,7 @@ class Checkout(Command):
                     file_lines = source_diff.diff.split('\n')
                     break
             else:
-                raise CVSError(Checkout, not_found_msg)
+                raise CVSError(not_found_msg)
             diff_lines = last_version.diff.split('\n')
             self.restore_file(file_lines, diff_lines)
             with file.open('w', encoding='utf-8') as file_writer:

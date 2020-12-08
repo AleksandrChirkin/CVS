@@ -30,8 +30,6 @@ def parse_args() -> Dict[str, Any]:
     for argument in space:
         if not argument.startswith('__') and not argument.endswith('__'):
             arguments[argument] = space[argument]
-    if 'command' not in space.keys():
-        raise CVSError(System, 'No command entered')
     return arguments
 
 
@@ -54,10 +52,12 @@ if __name__ == '__main__':
     try:
         parsed_args = parse_args()
         config_logging(parsed_args)
+        if 'command' not in parsed_args.keys():
+            raise CVSError("No command entered")
         system = System(parsed_args['directory'])
         if parsed_args['command'] is not Init and\
                 not system.does_repository_exist():
-            raise CVSError(System, "Repository does not exist! "
+            raise CVSError("Repository does not exist! "
                            "To create a repository, use 'init' command")
         system.run(**parsed_args)
     except CVSError as err:
