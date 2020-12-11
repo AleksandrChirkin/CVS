@@ -56,7 +56,8 @@ class Checkout(Command):
                     file_lines = source_diff.diff.split('\n')
                     break
             else:
-                raise CVSError(not_found_msg)
+                logging.warning(not_found_msg)
+                return
             diff_lines = last_version.diff.split('\n')
             self.restore_file(file_lines, diff_lines)
             if not self.arguments['no_disk_changes']:

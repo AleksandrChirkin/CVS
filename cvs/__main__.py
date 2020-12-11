@@ -10,7 +10,7 @@ from cvs import CVSError, Init, System, COMMANDS  # noqa
 
 
 def parse_args() -> Dict[str, Any]:
-    parser = ArgumentParser(description='Concurrent Versions cvs')
+    parser = ArgumentParser(description='Concurrent Versions System (CVS)')
     parser.add_argument('-d', '--directory', default=Path.cwd(),
                         help='Searches repository in other directory')
     parser.add_argument('-n', '--no-disk-changes', action='store_true',
@@ -33,7 +33,7 @@ def parse_args() -> Dict[str, Any]:
     return arguments
 
 
-def config_logging(args):
+def config_logging(args: Dict[str, Any]) -> None:
     if args['ignore_all']:
         logging.basicConfig(format=u'%(message)s', level=logging.ERROR,
                             stream=sys.stdout)
