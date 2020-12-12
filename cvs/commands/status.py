@@ -12,9 +12,9 @@ class Status(Command):
         try:
             branch = self.get_branch()
             logging.info(f'Current branch: {branch.name}')
-            for item in os.walk(self.system.directory):
-                for file in item[2]:
-                    full_path = Path(item[0]) / file
+            for directory, _, files in os.walk(self.system.directory):
+                for file in files:
+                    full_path = Path(directory) / file
                     relative_path = full_path\
                         .relative_to(self.system.directory)
                     if str(relative_path) not in branch.source.keys():
