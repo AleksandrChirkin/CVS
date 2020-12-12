@@ -34,7 +34,7 @@ class Add(Command):
 
     def add(self, file: Path) -> None:
         relative_path = file.relative_to(self.system.directory)
-        if self.system.is_in_cvsignore(file):
+        if self.system.is_in_cvsignore(relative_path):
             logging.debug(f'{relative_path}'
                           f' was ignored because it is in .cvsignore')
         else:

@@ -24,15 +24,18 @@ class System:
     def is_in_cvsignore(self, file: Path) -> bool:
         if not self.cvsignore.exists():
             return False
+        file_parents = set(parent.name for parent in file.parents
+                           if parent != Path('.'))
+        file_parents.add(file.name)
         with self.cvsignore.open(encoding='utf-8') as cvsignore:
-            ignored = cvsignore.readlines()
-        for ignored_item in ignored:
-            glob = Path(self.directory).glob('**/'+ignored_item.strip())
-            for glob_item in glob:
+            for ignored_item in cvsignore:
+                ignored_item = Path(ignored_item.strip())
+                if str(ignored_item) in file_parents:
+                    return True
                 try:
-                    file.relative_to(glob_item)
+                    file.relative_to(ignored_item)
                 except ValueError:
-                    continue
+                    pass
                 else:
                     return True
         return False

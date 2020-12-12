@@ -8,7 +8,7 @@ import unittest
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
-from cvs import Init, Commit, Reset, Log, Checkout, Tag, Branch, Status,\
+from cvs import Init, Commit, Reset, Log, Checkout, Tag, Branch, Status, \
     System, COMMANDS  # noqa
 
 
@@ -27,7 +27,6 @@ class TestCommands(unittest.TestCase):
                 os.remove(Path(item[0]) / file)
             for directory in item[1]:
                 os.rmdir(Path(item[0]) / directory)
-        os.remove(Path.cwd() / '.cvsignore')
         os.rmdir(Path.cwd() / '.repos')
         system = System(Path.cwd())
         system.run(no_disk_changes=False, command=Init, recreate=False)
@@ -46,7 +45,8 @@ class TestCommands(unittest.TestCase):
         for item in os.walk(Path.cwd() / 'cvs'):
             for file in item[2]:
                 full_path = Path(item[0]) / file
-                if not system.is_in_cvsignore(full_path):
+                relative_path = full_path.relative_to(system.directory)
+                if not system.is_in_cvsignore(relative_path):
                     relative_path = str(full_path.relative_to(Path.cwd()))
                     self.assertIn(relative_path, added.keys())
                     self.assertTrue((system.tagged / added[relative_path])
@@ -66,7 +66,7 @@ class TestCommands(unittest.TestCase):
             readme.write(' ')
         tests.add_files()
         system.run(no_disk_changes=False, command=Commit, branch='master',
-                   message='Committing README')
+                   message='Committing test file')
         self.assertEqual(len(next(os.walk(system.branches))[2]), 1)
         self.assertEqual(len(next(os.walk(system.revisions))[2]), 2)
         self.assertFalse(system.add_list.exists())
@@ -168,11 +168,6 @@ class TestCommands(unittest.TestCase):
         second_path = Path('tests/test_file2.txt')
         if second_path.exists():
             os.remove(second_path)
-        with Path('README.md').open('r+') as readme:
-            readme_size = readme.seek(0, 2)
-            readme.seek(readme_size - 1, 0)
-            if readme.readline(1) == ' ':
-                readme.truncate(0)
 
 
 if __name__ == '__main__':

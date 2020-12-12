@@ -2,7 +2,6 @@ from cvs import Command, CVSError
 from pathlib import Path
 import logging
 import os
-import shutil
 
 
 class Init(Command):
@@ -41,11 +40,6 @@ class Init(Command):
                 if not self.arguments['no_disk_changes']:
                     os.rmdir(full_folder)
                 logging.debug(f"{full_folder} removed")
-        if self.system.cvsignore.exists():
-            if not self.arguments['no_disk_changes']:
-                os.remove(self.system.cvsignore)
-            logging.debug(f".cvsignore file in {self.system.directory}"
-                          f" removed")
         if not self.arguments['no_disk_changes']:
             os.rmdir(self.system.repository)
         logging.info(f"Repository in {self.system.directory} removed")
@@ -68,9 +62,5 @@ class Init(Command):
             os.mkdir(self.system.tags)
         logging.debug('Tags folder created')
         if not self.arguments['no_disk_changes']:
-            shutil.copyfile(self.system.directory / '.gitignore',
-                            self.system.cvsignore)
-            with self.system.cvsignore.open('a+',
-                                            encoding='utf-8') as cvsignore:
-                cvsignore.write('\n.git')
+            self.system.cvsignore.touch()
         logging.debug('.cvsignore file created')

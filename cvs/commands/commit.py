@@ -122,13 +122,12 @@ class Commit(Command):
                     }
                     json.dump(content, rev_file, indent=4)
             for diff in new_revision.diffs:
-                kind = self.get_kind_str(diff)
                 if not self.arguments['no_disk_changes']:
                     with (self.system.diffs / f'{diff.id}.json')\
                             .open('w', encoding='utf-8') as diff_file:
                         content = {
                             'ID': diff.id,
-                            'Kind': kind,
+                            'Kind': str(diff.kind),
                             'File': diff.file,
                             'Diff': diff.diff
                         }
@@ -139,14 +138,6 @@ class Commit(Command):
             if not self.arguments['no_disk_changes']:
                 self.update_log(branch)
                 self.system.set_current_branch(self.arguments['branch'])
-
-    @staticmethod
-    def get_kind_str(diff: Diff) -> str:
-        if diff.kind == DiffKind.ADD:
-            return 'ADD'
-        elif diff.kind == DiffKind.DELETE:
-            return 'DELETE'
-        return 'CHANGE'
 
     def update_log(self, branch: CVSBranch) -> None:
         json_message = {

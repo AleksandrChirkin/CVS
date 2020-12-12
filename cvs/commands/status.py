@@ -18,7 +18,7 @@ class Status(Command):
                     relative_path = full_path\
                         .relative_to(self.system.directory)
                     if str(relative_path) not in branch.source.keys():
-                        if not self.system.is_in_cvsignore(full_path):
+                        if not self.system.is_in_cvsignore(relative_path):
                             logging.info(f'New file: {relative_path}')
                     elif self.is_file_modified(branch, full_path):
                         logging.info(f'File {relative_path} was modified')

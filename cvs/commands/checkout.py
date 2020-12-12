@@ -15,9 +15,11 @@ class Checkout(Command):
                 raise CVSError(f'Branch {branch.name} does not exist!')
             for directory, _, files in os.walk(self.system.directory):
                 for file in files:
-                    file_path = Path(directory)/file
-                    if not self.system.is_in_cvsignore(file_path):
-                        self.checkout(branch, file_path)
+                    full_path = Path(directory)/file
+                    short_path = full_path\
+                        .relative_to(self.system.directory)
+                    if not self.system.is_in_cvsignore(short_path):
+                        self.checkout(branch, full_path)
             if not self.arguments['no_disk_changes']:
                 self.system.set_current_branch(branch.name)
         except Exception as err:
