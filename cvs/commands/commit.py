@@ -127,7 +127,7 @@ class Commit(Command):
                             .open('w', encoding='utf-8') as diff_file:
                         content = {
                             'ID': diff.id,
-                            'Kind': str(diff.kind),
+                            'Kind': diff.kind.name,
                             'File': diff.file,
                             'Diff': diff.diff
                         }
