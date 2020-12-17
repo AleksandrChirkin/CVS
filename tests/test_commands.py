@@ -102,7 +102,7 @@ class TestCommands(unittest.TestCase):
         system = tests.make_commit()
         system.run(no_disk_changes=False, command=Reset, branch='master',
                    files=['tests/test_file.txt'],
-                   revision=next(os.walk(system.revisions))[2][-1][:-5])
+                   revision=next(os.walk(system.revisions))[2][0][:-5])
         with Path('tests/test_file.txt').open(encoding='utf-8') as readme:
             self.assertEqual(''.join(readme.readlines()), readme_content)
 
@@ -132,7 +132,8 @@ class TestCommands(unittest.TestCase):
                 .open('r+', encoding='utf-8') as test_file:
             test_content = ''.join(test_file.readlines())
             test_file.write(' ')
-        system.run(no_disk_changes=False, command=Checkout, branch='master')
+        system.run(no_disk_changes=False, command=Checkout, branch='master',
+                   revision=None, tag=None)
         with Path('tests/test_file.txt').open(encoding='utf-8') as test_file:
             self.assertEqual(''.join(test_file.readlines()), test_content)
 
@@ -142,11 +143,27 @@ class TestCommands(unittest.TestCase):
                    revision=None, message='A test tag')
         tags = next(os.walk(system.tags))[2]
         self.assertEqual(len(tags), 1)
-        self.assertEqual(tags[0], 'TEST')
-        with (system.tags / 'TEST').open() as test_tag:
-            self.assertEqual(test_tag.readline(),
-                             f'TEST {next(os.walk(system.revisions))[2][-1]}'
-                             f' A test tag')
+        self.assertEqual(tags[0], 'TEST.json')
+        with (system.tags / 'TEST.json').open() as test_tag:
+            tag_content = json.load(test_tag)
+            self.assertEqual(tag_content['Name'], 'TEST')
+            self.assertEqual(tag_content['Revision'],
+                             next(os.walk(system.revisions))[2][-1][:-5])
+            self.assertEqual(tag_content['Message'], 'A test tag')
+
+    def test_reset_with_tag(self):
+        system, test_content = tests.tag_to_reset_or_checkout()
+        system.run(no_disk_changes=False, command=Reset, branch='master',
+                   files=['tests/test_file.txt'], revision=None, tag='TEST')
+        with Path('tests/test_file.txt').open(encoding='utf-8') as test_file:
+            self.assertEqual(''.join(test_file.readlines()), test_content)
+
+    def test_checkout_with_tag(self):
+        system, test_content = tests.tag_to_reset_or_checkout()
+        system.run(no_disk_changes=False, command=Checkout, branch='master',
+                   revision=None, tag='TEST')
+        with Path('tests/test_file.txt').open(encoding='utf-8') as test_file:
+            self.assertEqual(''.join(test_file.readlines()), test_content)
 
     def test_branch(self) -> None:
         system = tests.make_commit()

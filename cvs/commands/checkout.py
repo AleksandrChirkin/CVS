@@ -28,6 +28,8 @@ class Checkout(Command):
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('checkout')
         parser.set_defaults(command=Checkout)
+        parser.add_argument('-rev', '--revision', help='Revision number')
+        parser.add_argument('-t', '--tag', help='Tag name')
         parser.add_argument('branch', help='Branch name')
 
     def checkout(self, branch: CVSBranch, file: Path) -> None:
@@ -38,11 +40,25 @@ class Checkout(Command):
             logging.warning(not_found_msg)
             return
         last_version = None
-        for rev in branch.revisions:
-            for diff in rev.diffs:
+        revision = self.get_revision_name()
+        if revision is not None:
+            for rev in branch.revisions:
+                if rev.id == revision:
+                    found_revision = rev
+                    break
+            else:
+                raise CVSError(f'Revision {revision} was not found '
+                               f'in branch {branch.name}')
+            for diff in found_revision.diffs:
                 if diff.file == str(relative_path):
                     last_version = diff
                     break
+        else:
+            for rev in branch.revisions:
+                for diff in rev.diffs:
+                    if diff.file == str(relative_path):
+                        last_version = diff
+                        break
         if last_version is None:
             logging.warning(not_found_msg)
             return

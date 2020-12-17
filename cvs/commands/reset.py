@@ -22,6 +22,7 @@ class Reset(Command):
         parser.add_argument('-b', '--branch', default='master',
                             help='Branch name')
         parser.add_argument('-rev', '--revision', help='Revision number')
+        parser.add_argument('-t', '--tag', help='Revision number')
         parser.add_argument('files', nargs='+', help='File name')
 
     def reset(self, file: Path) -> None:
@@ -34,15 +35,14 @@ class Reset(Command):
         if str(relative_path) not in branch.source.keys():
             raise CVSError(not_found_msg)
         last_diff = None
+        revision = self.get_revision_name()
         for rev in branch.revisions:
-            if rev.id == self.arguments['revision']:
+            if rev.id == revision:
                 for diff in rev.diffs:
                     if diff.file == str(relative_path):
                         self.get_version(branch, diff, file)
-                        break
-                else:
-                    raise CVSError(not_found_msg)
-                break
+                        return
+                raise CVSError(not_found_msg)
             for diff in rev.diffs:
                 if diff.file == str(relative_path):
                     last_diff = diff

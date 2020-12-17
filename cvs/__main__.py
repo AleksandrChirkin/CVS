@@ -24,7 +24,7 @@ def parse_args() -> Dict[str, Any]:
                               help='Ignores some messages')
     subparsers = parser.add_subparsers(title='command')
     for command in COMMANDS:
-        command(None).set_parser(subparsers)
+        command().set_parser(subparsers)
     space = parser.parse_args().__dict__
     arguments = {}
     for argument in space:

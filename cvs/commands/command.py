@@ -125,3 +125,26 @@ class Command:
                 files_margin += 1
             elif diff_lines[i][0] == '?':
                 files_margin += 1
+
+    def get_revision_name(self) -> Optional[str]:
+        if self.arguments['revision'] is not None:
+            return self.arguments['revision']
+        elif self.arguments['tag'] is not None:
+            return self.get_revision_from_tag(self.arguments['tag']).id
+        else:
+            return None
+
+    def get_revision_from_tag(self, tag_name: str) -> Revision:
+        branch = self.get_branch()
+        try:
+            with Path(self.system.tags/f'{tag_name}.json')\
+                    .open(encoding='utf-8') as tag_file:
+                tag_data = json.load(tag_file)
+            revision_id = tag_data['Revision']
+            for revision in branch.revisions:
+                if revision.id == revision_id:
+                    return revision
+            else:
+                raise CVSError(f'Revision {revision_id} was not found!')
+        except FileNotFoundError:
+            raise CVSError(f'Tag {tag_name} was not found!')
