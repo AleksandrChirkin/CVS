@@ -13,7 +13,7 @@ class TestCVS(unittest.TestCase):
     def setUp(self) -> None:
         self.system = System(Path.cwd())
         self.system.run(no_disk_changes=False, command=Init,
-                        recreate=Path.exists(Path.cwd() / '.repos'))
+                        recreate=(Path.cwd() / '.repos').exists())
         parser = ArgumentParser()
         subparsers = parser.add_subparsers()
         for command in COMMANDS:
