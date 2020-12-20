@@ -51,8 +51,7 @@ class Commit(Command):
         parser.set_defaults(command=Commit)
         parser.add_argument('-m', '--message', default='',
                             help='Log message')
-        parser.add_argument('-b', '--branch', default='master',
-                            help='Branch name')
+        parser.add_argument('-b', '--branch', help='Branch name')
 
     def add(self, file: Path, tagged: str, branch: CVSBranch,
             revision: Revision) -> None:

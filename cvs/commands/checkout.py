@@ -47,8 +47,8 @@ class Checkout(Command):
                     found_revision = rev
                     break
             else:
-                raise CVSError(f'Revision {revision} was not found '
-                               f'in branch {branch.name}')
+                logging.debug(not_found_msg)
+                return
             for diff in found_revision.diffs:
                 if diff.file == str(relative_path):
                     last_version = diff
@@ -60,7 +60,7 @@ class Checkout(Command):
                         last_version = diff
                         break
         if last_version is None:
-            logging.warning(not_found_msg)
+            logging.debug(not_found_msg)
             return
         if last_version.kind == DiffKind.ADD:
             if not self.arguments['no_disk_changes']:
@@ -74,7 +74,7 @@ class Checkout(Command):
                     file_lines = source_diff.diff.split('\n')
                     break
             else:
-                logging.warning(not_found_msg)
+                logging.debug(not_found_msg)
                 return
             diff_lines = last_version.diff.split('\n')
             self.restore_file(file_lines, diff_lines)

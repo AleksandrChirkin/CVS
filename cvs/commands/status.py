@@ -28,5 +28,4 @@ class Status(Command):
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('status')
         parser.set_defaults(command=Status)
-        parser.add_argument('-b', '--branch', default='master',
-                            help='Branch name')
+        parser.add_argument('-b', '--branch', help='Branch name')

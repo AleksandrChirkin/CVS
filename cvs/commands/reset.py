@@ -19,11 +19,10 @@ class Reset(Command):
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('reset')
         parser.set_defaults(command=Reset)
-        parser.add_argument('-b', '--branch', default='master',
-                            help='Branch name')
+        parser.add_argument('-b', '--branch', help='Branch name')
         parser.add_argument('-rev', '--revision', help='Revision number')
-        parser.add_argument('-t', '--tag', help='Revision number')
-        parser.add_argument('files', nargs='+', help='File name')
+        parser.add_argument('-t', '--tag', help='Tag name')
+        parser.add_argument('files', nargs='+', help='File names')
 
     def reset(self, file: Path) -> None:
         relative_path = file.relative_to(self.system.directory)

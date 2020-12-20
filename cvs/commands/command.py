@@ -12,6 +12,9 @@ class Command:
     def __init__(self, system: Optional[System] = None, **arguments):
         self.arguments = arguments
         self.system = system
+        if 'branch' in self.arguments.keys() and\
+                self.arguments['branch'] is None:
+            self.arguments['branch'] = self.system.get_current_branch()
 
     @abstractmethod
     def run(self) -> None:

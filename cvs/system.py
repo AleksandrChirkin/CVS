@@ -45,5 +45,7 @@ class System:
             head.write(branch_name)
 
     def get_current_branch(self) -> str:
+        if not (self.repository/'HEAD').exists():
+            return 'master'
         with (self.repository/'HEAD').open(encoding='utf-8') as head:
             return head.readline()
