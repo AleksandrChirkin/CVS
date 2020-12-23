@@ -1,4 +1,4 @@
-from cvs import Command, CVSError
+from cvs import Command, RepositoryDoesNotExistError, RepositoryExistsError
 from pathlib import Path
 import logging
 import os
@@ -10,13 +10,10 @@ class Init(Command):
     """
 
     def run(self) -> None:
-        try:
-            if self.arguments['recreate']:
-                self.recreate_repository()
-            else:
-                self.create_repository()
-        except Exception as err:
-            raise CVSError(str(err))
+        if self.arguments['recreate']:
+            self.recreate_repository()
+        else:
+            self.create_repository()
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('init')
@@ -26,8 +23,7 @@ class Init(Command):
 
     def recreate_repository(self) -> None:
         if not Path(self.system.repository).exists():
-            raise CVSError("Repository does not exist! "
-                           "To create a repository, use 'init' command")
+            raise RepositoryDoesNotExistError
         for rep_name, subdirs, files in os.walk(self.system.repository,
                                                 False):
             for item in files:
@@ -46,6 +42,8 @@ class Init(Command):
         self.create_repository()
 
     def create_repository(self) -> None:
+        if self.system.repository.exists():
+            raise RepositoryExistsError
         if not self.arguments['no_disk_changes']:
             os.mkdir(self.system.repository)
         logging.info(f'Repository in {self.system.directory} created')

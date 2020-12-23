@@ -59,18 +59,9 @@ class Command:
         with diff_path.open(encoding='utf-8') as diff_file:
             diff_info = json.load(diff_file)
             return Diff(id=diff_info['ID'],
-                        kind=self.get_diff_kind(diff_info),
+                        kind=DiffKind(diff_info['Kind'].lower()),
                         file=diff_info['File'],
                         diff=diff_info['Diff'])
-
-    @staticmethod
-    def get_diff_kind(diff_info: dict) -> DiffKind:
-        if diff_info['Kind'] == 'ADD':
-            return DiffKind.ADD
-        if diff_info['Kind'] == 'CHANGE':
-            return DiffKind.CHANGE
-        if diff_info['Kind'] == 'DELETE':
-            return DiffKind.DELETE
 
     def is_file_modified(self, branch: CVSBranch, file: Path) -> bool:
         lines_modified = 0

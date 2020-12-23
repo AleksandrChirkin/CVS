@@ -6,7 +6,8 @@ import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              os.path.pardir))
-from cvs import CVSError, Init, System, COMMANDS  # noqa
+from cvs import CVSError, Init, NoCommandError, RepositoryDoesNotExistError,\
+    System, COMMANDS  # noqa
 
 
 def parse_args() -> Dict[str, Any]:
@@ -53,12 +54,11 @@ if __name__ == '__main__':
         parsed_args = parse_args()
         config_logging(parsed_args)
         if 'command' not in parsed_args.keys():
-            raise CVSError("No command entered")
+            raise NoCommandError
         system = System(parsed_args['directory'])
         if parsed_args['command'] is not Init and\
                 not system.does_repository_exist():
-            raise CVSError("Repository does not exist! "
-                           "To create a repository, use 'init' command")
+            raise RepositoryDoesNotExistError
         system.run(**parsed_args)
     except CVSError as err:
         logging.error(err)

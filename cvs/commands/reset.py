@@ -1,4 +1,5 @@
-from cvs import CVSBranch, CVSError, Command, Diff
+from cvs import CVSBranch, BranchDoesNotExistError, IsDirectoryError,\
+    NotFoundInSourceError, Command, Diff
 from pathlib import Path
 import logging
 
@@ -10,11 +11,8 @@ class Reset(Command):
     the last committed version from master branch would be reset.
     """
     def run(self) -> None:
-        try:
-            for file in self.arguments['files']:
-                self.reset(self.system.directory / file)
-        except Exception as err:
-            raise CVSError(str(err))
+        for file in self.arguments['files']:
+            self.reset(self.system.directory / file)
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('reset')
@@ -27,12 +25,12 @@ class Reset(Command):
     def reset(self, file: Path) -> None:
         relative_path = file.relative_to(self.system.directory)
         if file.is_dir():
-            raise CVSError(f'{relative_path} is a directory!')
+            raise IsDirectoryError(relative_path)
         branch = self.get_branch()
-        not_found_msg = f'{relative_path} was not reset because his source' \
-                        f' was not found in repository'
+        if len(branch.revisions) == 0:
+            raise BranchDoesNotExistError(branch.name)
         if str(relative_path) not in branch.source.keys():
-            raise CVSError(not_found_msg)
+            raise NotFoundInSourceError(relative_path)
         last_diff = None
         revision = self.get_revision_name()
         for rev in branch.revisions:
@@ -41,12 +39,12 @@ class Reset(Command):
                     if diff.file == str(relative_path):
                         self.get_version(branch, diff, file)
                         return
-                raise CVSError(not_found_msg)
+                raise NotFoundInSourceError(relative_path)
             for diff in rev.diffs:
                 if diff.file == str(relative_path):
                     last_diff = diff
         if last_diff is None:
-            raise CVSError(not_found_msg)
+            raise NotFoundInSourceError(relative_path)
         self.get_version(branch, last_diff, file)
 
     def get_version(self, branch: CVSBranch, diff: Diff, file: Path) -> None:
@@ -57,9 +55,7 @@ class Reset(Command):
                 file_diff = rev_diff
                 break
         else:
-            logging.warning(f'{relative_path} was not reset because his source'
-                            ' was not found in repository')
-            return
+            raise NotFoundInSourceError(relative_path)
         file_lines = file_diff.diff.split('\n')
         diff_lines = diff.diff.split('\n')
         self.restore_file(file_lines, diff_lines)

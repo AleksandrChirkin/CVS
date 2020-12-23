@@ -1,4 +1,4 @@
-from cvs import CVSBranch, Command, CVSError, DiffKind
+from cvs import CVSBranch, Command, BranchDoesNotExistError, DiffKind
 from pathlib import Path
 import logging
 import os
@@ -6,24 +6,22 @@ import os
 
 class Checkout(Command):
     """
-    Switching to another branch
+    Switching to other branch
     """
+
     def run(self) -> None:
-        try:
-            branch = self.get_branch()
-            if len(branch.revisions) == 0:
-                raise CVSError(f'Branch {branch.name} does not exist!')
-            for directory, _, files in os.walk(self.system.directory):
-                for file in files:
-                    full_path = Path(directory)/file
-                    short_path = full_path\
-                        .relative_to(self.system.directory)
-                    if not self.system.is_in_cvsignore(short_path):
-                        self.checkout(branch, full_path)
-            if not self.arguments['no_disk_changes']:
-                self.system.set_current_branch(branch.name)
-        except Exception as err:
-            raise CVSError(str(err))
+        branch = self.get_branch()
+        if len(branch.revisions) == 0:
+            raise BranchDoesNotExistError(branch.name)
+        for directory, _, files in os.walk(self.system.directory):
+            for file in files:
+                full_path = Path(directory) / file
+                short_path = full_path \
+                    .relative_to(self.system.directory)
+                if not self.system.is_in_cvsignore(short_path):
+                    self.checkout(branch, full_path)
+        if not self.arguments['no_disk_changes']:
+            self.system.set_current_branch(branch.name)
 
     def set_parser(self, subparsers_list) -> None:
         parser = subparsers_list.add_parser('checkout')
